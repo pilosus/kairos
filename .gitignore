@@ -4,8 +4,6 @@
 /classes
 /checkouts
 profiles.clj
-pom.xml
-pom.xml.asc
 *.jar
 *.class
 /.lein-*
@@ -17,6 +15,11 @@ pom.xml.asc
 .cpcache
 .rebel_readline_history
 .eastwood
+.nrepl-history
+.nrepl-port
+.portal
+.project
+.socket-repl-port
 
 *~
 \#*\#
