@@ -40,7 +40,8 @@ jobs:
         run: clojure -X:test:cloverage
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
-        env: CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       - name: Build JAR
         run: clojure -T:build ci :snapshot true :test-disable true
       - name: Deploy Release
