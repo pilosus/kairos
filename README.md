@@ -14,7 +14,7 @@ in UTC timezone that satisfy given `crontab` conditions.
 
 ## Usage
 
-```
+```clojure
 (require '[org.pilosus.kairos :as kairos])
 
 ;; parse crontab string into a map

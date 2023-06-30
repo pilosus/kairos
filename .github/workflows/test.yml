@@ -1,0 +1,45 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Setup Clojure
+        uses: DeLaGuardo/setup-clojure@11.0
+        with:
+          cli: '1.11.1.1273'
+      - name: Cache Clojure Deps
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.clojure
+            ~/.cpcache
+            ~/.gitlibs
+            ~/.m2/repository
+          key: ${{ runner.os }}-${{ hashFiles('**/deps.edn') }}
+      - name: Run Linters
+        run: clojure -M:eastwood
+      - name: Run Code Formatters
+        run: clojure -X:fmt:fmtcheck
+      - name: Run Tests with Code Coverage
+        run: clojure -X:test:cloverage
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env: CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Build JAR
+        run: clojure -T:build ci :snapshot true :test-disable true

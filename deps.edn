@@ -32,10 +32,8 @@
    :exec-args
    {:fail-threshold 85
     :codecov? true
-
     :src-ns-path
     ["src"]
-
     :test-ns-path
     ["test"]}}
 
