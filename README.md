@@ -1,6 +1,7 @@
 # org.pilosus/kairos
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.pilosus/kairos.svg)](https://clojars.org/org.pilosus/kairos)
+[![codecov](https://codecov.io/gh/pilosus/kairos/branch/main/graph/badge.svg?token=8OKTCKNq17)](https://codecov.io/gh/pilosus/kairos)
 
 Crontab parsing library for Clojure.
 
