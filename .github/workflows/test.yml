@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
