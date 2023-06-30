@@ -21,13 +21,14 @@
 
 (defn- jar-opts [opts]
   (assoc opts
-          :lib lib :version version
-          :jar-file (format "target/%s-%s.jar" lib version)
-          :scm {:tag (str "v" version)}
-          :basis (b/create-basis {})
-          :class-dir class-dir
-          :target "target"
-          :src-dirs ["src"]))
+         :lib lib :version version
+         :jar-file (format "target/%s-%s.jar" lib version)
+         :scm {:tag (str "v" version)}
+         :basis (b/create-basis {})
+         :class-dir class-dir
+         :target "target"
+         :src-dirs ["src"]
+         :src-pom "template/pom.xml"))
 
 (defn ci "Run the CI pipeline of tests (and build the JAR)." [opts]
   (test opts)
