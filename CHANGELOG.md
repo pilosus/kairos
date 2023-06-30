@@ -3,12 +3,12 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
-## [0.1.1] - 2023-06-29
+## [0.1.1] - 2023-06-30
 ### Added
 - Crontab string parsing
 - Generation of Date-Time objects satisfying crontab
   conditions. Objects get generated as a lazy sequence.
 - Project CI/CD workflows
 
-[Unreleased]: https://github.com/pilosus/kairos/compare/0.1.1...HEAD
-[0.1.1]: https://github.com/pilosus/kairos/compare/0.0.0...0.1.1
+[Unreleased]: https://github.com/pilosus/kairos/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/pilosus/kairos/compare/v0.0.0...v0.1.1
