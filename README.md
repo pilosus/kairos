@@ -7,7 +7,9 @@ Crontab parsing library for Clojure.
 
 Supports [vixie-cron](https://man7.org/linux/man-pages/man5/crontab.5.html)
 syntax. Generates a lazy sequence of `java.time.ZonedDateTime` objects
-in UTC timezone that satisfy given `crontab` conditions.
+in `UTC` timezone that satisfy given `crontab` constraints.
+
+*Kairos* (καιρός) means the right, critical, or opportune moment.
 
 ## Install
 
@@ -18,16 +20,32 @@ in UTC timezone that satisfy given `crontab` conditions.
 ```clojure
 (require '[org.pilosus.kairos :as kairos])
 
-;; parse crontab string into a map
-(kairos/parse-cron "39 9 * * wed-fri")
-
-;; generate a lazy sequence of java.time.ZonedDateTime[UTC] objects
-;; that satisfy given crontab constraints
+;; 1. Generate a lazy sequence of java.time.ZonedDateTime[UTC] objects
+;; that satisfy given crontab constraints:
 (kairos/get-dt-seq "0 10 3,7 Dec Mon")
 
-;; generate Date-Time sequence for a range of years
-;; range from/to behaves like the one in clojure.core/range
-(kairos/get-dt-seq "39 9 * * wed-fri" 2023 2029)
+;; (#object[java.time.ZonedDateTime 0x55eb9b05 "2023-12-03T10:00Z[UTC]"]
+;;  #object[java.time.ZonedDateTime 0x2ed291ba "2023-12-04T10:00Z[UTC]"]
+;;  ...
+;;  #object[java.time.ZonedDateTime 0x749adbda "2024-12-30T10:00Z[UTC]"])
+
+;; 2. Generate a Date-Time sequence for a range of years,
+;; from start (inclusive) to end (exclusive):
+(kairos/get-dt-seq "0 10 3,7 Dec Mon" 2030 2032)
+
+;; ("2030-12-02T10:00Z[UTC]"
+;;  "2030-12-03T10:00Z[UTC]"
+;;   ...
+;;  "2031-12-29T10:00Z[UTC]")
+
+;; 3. Parse crontab string into a map:
+(kairos/parse-cron "12,14,17,35-45/3 */2 27 Feb-Jun *")
+
+;; {:minute (12 14 17 35 38 41 44),
+;;  :hour (0 2 4 6 8 10 12 14 16 18 20 22),
+;;  :day-of-month (27),
+;;  :month (2 3 4 5 6),
+;;  :day-of-week ()}
 ```
 
 ## License
