@@ -1,12 +1,7 @@
 {:paths ["src"]
- :deps {}
+ :deps {org.clojure/clojure {:mvn/version "1.11.1"}}
  :aliases
- {
-  ;; Dev deps
-  :dev
-  {:extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}}}
-
-  ;; Builing
+ {;; Builing
   :build {:deps {io.github.clojure/tools.build
                  {:git/tag "v0.9.4" :git/sha "76b78fe"}
                  slipset/deps-deploy {:mvn/version "0.2.1"}}

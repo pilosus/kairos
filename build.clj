@@ -4,9 +4,14 @@
             [deps-deploy.deps-deploy :as dd]))
 
 (def lib 'org.pilosus/kairos)
-(def version "0.1.3")
-#_ ; alternatively, use MAJOR.MINOR.COMMITS:
-(def version (format "1.0.%s" (b/git-count-revs nil)))
+
+(defn- get-version
+  "FIXME: change MAJOR.MINOR parts manually if needed"
+  [patch]
+  (format "0.1.%s" patch))
+
+(def version (get-version (b/git-count-revs nil)))
+(def snapshot (get-version "9999-SNAPSHOT"))
 (def class-dir "target/classes")
 
 (defn test
@@ -23,15 +28,17 @@
 
 (defn- jar-opts
   [opts]
-  (assoc opts
-         :lib lib :version version
-         :jar-file (format "target/%s-%s.jar" lib version)
-         :scm {:tag (str "v" version)}
-         :basis (b/create-basis {})
-         :class-dir class-dir
-         :target "target"
-         :src-dirs ["src"]
-         :src-pom "template/pom.xml"))
+  (let [version (if (:snapshot opts) snapshot version)]
+    (println "\nVersion:" version)
+    (assoc opts
+           :lib lib :version version
+           :jar-file (format "target/%s-%s.jar" lib version)
+           :scm {:tag (str "v" version)}
+           :basis (b/create-basis {})
+           :class-dir class-dir
+           :target "target"
+           :src-dirs ["src"]
+           :src-pom "template/pom.xml")))
 
 (defn ci
   "Run the CI pipeline of tests (and build the JAR)"

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file. This change
 
 Nothing yet in `Unreleased` section.
 
+## [v0.1.14] - 2023-07-01
+### Changed
+- Release version's [patch](https://semver.org/) part uses `git
+  rev-list HEAD --count` on `main` branch.
+- Snapshot versions (being generated on merges to `main`) has
+  `9999-SNAPSHOT` patch part
+
 ## [v0.1.3] - 2023-07-01
 ### Added
 - Better examples in `README.md`
