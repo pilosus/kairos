@@ -22,21 +22,21 @@ in `UTC` timezone that satisfy given `crontab` constraints.
 
 ;; 1. Generate a lazy sequence of java.time.ZonedDateTime[UTC] objects
 ;; that satisfy given crontab constraints:
-(first (kairos/get-dt-seq "0 10 3,7 Dec Mon"))
+(kairos/get-dt-seq "0 10 3,7 Dec Mon")
 
-;; #object[java.time.ZonedDateTime 0x1ea5bb00 "2023-12-03T10:00Z[UTC]"]
+;; (#object[java.time.ZonedDateTime 0x55eb9b05 "2023-12-03T10:00Z[UTC]"]
+;;  #object[java.time.ZonedDateTime 0x2ed291ba "2023-12-04T10:00Z[UTC]"]
+;;  ...
+;;  #object[java.time.ZonedDateTime 0x749adbda "2024-12-30T10:00Z[UTC]"])
 
 ;; 2. Generate a Date-Time sequence for a range of years,
 ;; from start (inclusive) to end (exclusive):
-(->> (kairos/get-dt-seq "0 10 3,7 Dec Mon" 2030 2032)
-     (take 5)
-     (map str))
+(kairos/get-dt-seq "0 10 3,7 Dec Mon" 2030 2032)
 
 ;; ("2030-12-02T10:00Z[UTC]"
 ;;  "2030-12-03T10:00Z[UTC]"
-;;  "2030-12-07T10:00Z[UTC]"
-;;  "2030-12-09T10:00Z[UTC]"
-;;  "2030-12-16T10:00Z[UTC]")
+;;   ...
+;;  "2031-12-29T10:00Z[UTC]")
 
 ;; 3. Parse crontab string into a map:
 (kairos/parse-cron "12,14,17,35-45/3 */2 27 Feb-Jun *")
