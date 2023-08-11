@@ -22,7 +22,7 @@ jobs:
       - name: Setup Clojure
         uses: DeLaGuardo/setup-clojure@11.0
         with:
-          cli: '1.11.1.1273'
+          cli: '1.11.1.1356'
       - name: Cache Clojure Deps
         uses: actions/cache@v3
         with:
