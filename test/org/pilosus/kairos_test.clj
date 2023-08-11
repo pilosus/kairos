@@ -17,6 +17,8 @@
   (:require [clojure.test :refer :all]
             [org.pilosus.kairos :as kairos]))
 
+;; Helpers
+
 (deftest test-get-current-dt
   (testing "Test get current Date-Time"
     (is (= (type (kairos/get-current-dt)) java.time.ZonedDateTime))))
@@ -33,7 +35,8 @@
 (deftest test-get-dt
   (testing "Test creating Date-Time objects"
     (doseq [[year month day hour minute expected description] params-get-dt]
-      (is (= expected (type (kairos/get-dt year month day hour minute)))))))
+      (testing description
+        (is (= expected (type (kairos/get-dt year month day hour minute))))))))
 
 (def params-dt-valid?
   [[(kairos/get-dt 1970 12 31 0 0)
@@ -80,9 +83,12 @@
 (deftest test-dt-valid?
   (testing "Test Date-Time validation"
     (doseq [[dt days-of-month days-of-week expected description] params-dt-valid?]
-      (is (= expected (kairos/dt-valid? dt days-of-month days-of-week))))))
+      (testing description
+        (is (= expected (kairos/dt-valid? dt days-of-month days-of-week)))))))
 
-(def params-cron-parsed-ok
+;; Parsing cron into a map of ranges
+
+(def params-cron->map-ok
   [["12,14,17,35-45/3 */2 27 2 *"
     {:minute '(12 14 17 35 38 41 44),
      :hour '(0 2 4 6 8 10 12 14 16 18 20 22),
@@ -129,13 +135,13 @@
      :day-of-week '(2 3 4 5 6)}
     "Excessive elements ignored"]])
 
-(deftest test-parse-cron-ok
+(deftest test-cron->map-ok
   (testing "Test successful cron string parsing into a map:"
-    (doseq [[crontab expected description] params-cron-parsed-ok]
+    (doseq [[crontab expected description] params-cron->map-ok]
       (testing crontab
-        (is (= expected (kairos/parse-cron crontab)) description)))))
+        (is (= expected (kairos/cron->map crontab)) description)))))
 
-(def params-cron-parsed-fail
+(def params-cron->map-fail
   [["something */2 27 2 *"
     {:minute '(),
      :hour '(0 2 4 6 8 10 12 14 16 18 20 22),
@@ -154,13 +160,15 @@
     nil
     "The whole crontab string is incorrect"]])
 
-(deftest test-parse-cron-fail
+(deftest test-cron->map-fail
   (testing "Test failing to parse cron string"
-    (doseq [[crontab expected description] params-cron-parsed-fail]
+    (doseq [[crontab expected description] params-cron->map-fail]
       (testing crontab
-        (is (= (kairos/parse-cron crontab)) description)))))
+        (is (= (kairos/cron->map crontab) expected) description)))))
 
-(def params-get-dt-seq
+;; Parsing cron into a lazy seq of ZonedDateTime objects
+
+(def params-cron->dt
   [["12,14,17,35-45/3 */2 27 2 *"
     (kairos/get-dt 1970 1 1 0 0)
     10
@@ -235,45 +243,32 @@
      (kairos/get-dt 1970 1 1 0 5)]
     "At every minute"]])
 
-(deftest test-get-dt-seq
+(deftest test-cron->dt
   (testing "Test generate a sequence of Date-Time objects:"
-    (doseq [[crontab dt quantity expected description] params-get-dt-seq]
+    (doseq [[crontab dt quantity expected description] params-cron->dt]
       (testing crontab
         ;; redef is needed to override checks for future events only, see dt-future?
         (with-redefs [kairos/get-current-dt (constantly dt)]
-          (let [result (take quantity (kairos/get-dt-seq crontab))]
+          (let [result (take quantity (kairos/cron->dt crontab))]
             (is (= expected result) description)))))))
 
-(def params-get-dt-seq-years-range
-  [["59 23 31 12 *"
-    (kairos/get-dt 2010 1 1 8 0)
-    2010
-    2011
-    (kairos/get-dt 2010 12 31 23 59)
-    "Next even within years range"]
-   ["59 23 31 12 *"
-    (kairos/get-dt 2010 1 1 8 0)
-    2010
-    2010
-    nil
-    "Years range is empty: from == to"]
-   ["59 23 31 12 *"
-    (kairos/get-dt 2010 1 1 8 0)
-    2014
-    2010
-    nil
-    "Years range is empty: from > to"]
-   ["59 23 31 12 *"
-    (kairos/get-dt 2021 1 1 8 0)
-    2010
-    2012
-    nil
-    "Years range is not empty, but in the past"]])
+;; Parsing cront into a human-readable text
 
-(deftest test-get-dt-seq-years-range
-  (testing "Test generate a sequence of Date-Time objects for a years range:"
-    (doseq [[crontab now from to expected description] params-get-dt-seq-years-range]
-      (testing crontab
-        (with-redefs [kairos/get-current-dt (constantly now)]
-          (let [result (first (kairos/get-dt-seq crontab from to))]
-            (is (= expected result) description)))))))
+(def params-cron->texts-ok
+  [["12,14,17,35-45/3 */2 27 2 *"
+    "At minute 12, 14, 17, and every 3rd minute from 35 through 45 past every 2nd hour on day-of-month 27 in February"]
+   ["39 9 * * wed-fri"
+    {:minute '(39),
+     :hour '(9),
+     :day-of-month '(),
+     :month '(1 2 3 4 5 6 7 8 9 10 11 12),
+     :day-of-week '(3 4 5)}
+    "At 09:39 on every day-of-week from Wednesday through Friday"]
+   ["5 23 12 * Wed"
+    "At 23:05 on day-of-month 12 and on Wednesday"]
+   ["0 10 3,7 Dec Mon"
+    "At 10:00, on 3rd and 7th or every Monday of December"]
+   ["* * * * *"
+    "At every minute"]
+   ["0 10 3,7 12 Tue-Sat * * *"
+    "Excessive elements ignored"]])

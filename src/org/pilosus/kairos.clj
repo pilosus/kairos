@@ -27,20 +27,35 @@
 
   Sunday's day of week number can be either 0 or 7.
 
-  Date-Time entities use java.time.ZonedDateTime for UTC timezone."
+  Date-Time entities use java.time.ZonedDateTime for UTC timezone.
+
+
+  Definitions:
+
+  field - time and date fragments of the cron entry.
+
+  values - each field contains allowed values in the form of single
+  number or a name, their ranges, ranges with step values, lists, or
+  an asterisk.
+
+  named value - a 3-letter name for a month or a day of week.
+
+  range - two numbers or named values separated by a hyphen.
+
+  step value - range of values with a given step.
+
+  list of values - values separated by comma."
   (:gen-class)
   (:require [clojure.string :as string])
   (:import (java.time ZonedDateTime ZoneId)))
 
-(set! *warn-on-reflection* true)
-
 ;; Crontab parsing
 
-(def skip-range "")
+(def skip-field "")
 
 (def list-regex #",\s*")
 
-(def range-regex
+(def value-regex
   #"(?s)(?<start>([0-9|*]+))(?:-(?<end>([0-9]+)))?(?:/(?<step>[0-9]+))?")
 
 (def substitute-values
@@ -48,22 +63,52 @@
    #"jan" "1" #"feb" "2" #"mar" "3" #"apr" "4" #"may" "5" #"jun" "6"
    #"jul" "7" #"aug" "8" #"sep" "9" #"oct" "10" #"nov" "11" #"dec" "12"})
 
-(def range-values
+(def day-number->name
+  {1 "Monday"
+   2 "Tuesday"
+   3 "Wednesday"
+   4 "Thursday"
+   5 "Friday"
+   6 "Saturday"
+   7 "Sunday"})
+
+(def month-number->name
+  {1 "January"
+   2 "February"
+   3 "March"
+   4 "April"
+   5 "May"
+   6 "June"
+   7 "July"
+   8 "August"
+   9 "September"
+   10 "October"
+   11 "November"
+   12 "December"})
+
+(def field->range
   {:minute {:start 0 :end (+ 59 1)}
    :hour {:start 0 :end (+ 23 1)}
    :day-of-month {:start 1 :end (+ 31 1)}
    :month {:start 1 :end (+ 12 1)}
    :day-of-week {:start 1 :end (+ 7 1)}})
 
-(defn parse-range
-  "Parse a string with the range of values with an optional step value"
-  [s range-type]
-  (let [matcher (re-matcher range-regex s)]
+(def field->name
+  {:minute "minute"
+   :hour "hour"
+   :day-of-month "day of month"
+   :month "month"
+   :day-of-week "day of week"})
+
+(defn values->int
+  "Parse a string with the values into a range of integers"
+  [s field]
+  (let [matcher (re-matcher value-regex s)]
     (if (.matches matcher)
       (let [start (.group matcher "start")
             range-start
             (cond
-              (= start "*") (get-in range-values [range-type :start])
+              (= start "*") (get-in field->range [field :start])
               :else (Integer/parseInt (.group matcher "start")))
             step (.group matcher "step")
             range-step (if step (Integer/parseInt step) 1)
@@ -71,18 +116,33 @@
             range-end
             (cond
               end (+ (Integer/parseInt end) 1)
-              (or step (= start "*")) (get-in range-values [range-type :end])
+              (or step (= start "*")) (get-in field->range [field :end])
               :else (+ range-start 1))]
         (range range-start range-end range-step))
       nil)))
 
-(defn get-range
+(defn value->ordinal
+  "Return an ordinal integer number with the proper suffix in English,
+  e.g. 1 -> 1st, 2 -> 2nd, 3 -> 3rd, 15 -> 15th, etc."
+  [s]
+  (when-let [number (try (Integer/parseInt s) (catch Exception _ nil))]
+    (let [last-one-digit (mod number 10)
+          last-two-digits (mod number 100)
+          suffix (cond
+                   (contains? #{11 12 13} last-two-digits) "th"
+                   (= last-one-digit 1) "st"
+                   (= last-one-digit 2) "nd"
+                   (= last-one-digit 3) "rd"
+                   :else "th")]
+      (format "%s%s" number suffix))))
+
+(defn field->values
   "Parse a string into a sequence of numbers that represent a given
-  Date-Time fragment's type, e.g. minutes, hours, days of month, etc."
-  [s range-type]
-  (let [ranges (string/split s list-regex)
-        values (map #(parse-range % range-type) ranges)
-        flat (apply concat values)
+  Date-Time field's type, e.g. minutes, hours, days of month, etc."
+  [s field]
+  (let [lists (string/split s list-regex)
+        parsed-values (map #(values->int % field) lists)
+        flat (apply concat parsed-values)
         sorted (sort flat)]
     sorted))
 
@@ -99,12 +159,16 @@
   [^String s]
   (replace-names-with-numbers s (seq substitute-values)))
 
+(defn- zero->seven
+  [n]
+  (if (= n 0) 7 n))
+
 (defn- substitute-zero-day-of-week
   "Substitute 0 day of week for Sunday with 7 and return a sorted sequence"
   [day-of-week-range]
   (->>
    day-of-week-range
-   (map #(if (= % 0) 7 %))
+   (map zero->seven)
    sort))
 
 (defn- split-cron-string
@@ -116,25 +180,79 @@
       names->numbers
       (string/split #"\s+")))
 
-(defn parse-cron
+(defn cron->map
   "Parse crontab string into map of ranges"
   [s]
   (try
     (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
           ignore-day-of-month (and (= day-of-month "*") (not (= day-of-week "*")))
-          day-of-month' (if ignore-day-of-month skip-range day-of-month)
+          day-of-month' (if ignore-day-of-month skip-field day-of-month)
           ignore-day-of-week (and (= day-of-week "*") (not (= day-of-month "*")))
-          day-of-week' (if ignore-day-of-week skip-range day-of-week)
+          day-of-week' (if ignore-day-of-week skip-field day-of-week)
           cron
-          {:minute (get-range minute :minute)
-           :hour (get-range hour :hour)
-           :day-of-month (get-range day-of-month' :day-of-month)
-           :month (get-range month :month)
+          {:minute (field->values minute :minute)
+           :hour (field->values hour :hour)
+           :day-of-month (field->values day-of-month' :day-of-month)
+           :month (field->values month :month)
            :day-of-week (-> day-of-week'
-                            (get-range :day-of-week)
+                            (field->values :day-of-week)
                             substitute-zero-day-of-week)}]
       cron)
     (catch Exception _ nil)))
+
+;; Parsing cron into human-readable text
+
+(defmulti value->text
+  "Parse the value to human readable text"
+  (fn [_ field] field))
+
+(defmethod value->text :month [s _]
+  (when-let [number (try (Integer/parseInt s) (catch Exception _ nil))]
+    (->> number
+         (get month-number->name))))
+
+(defmethod value->text :day-of-week [s _]
+  (when-let [number (try (Integer/parseInt s) (catch Exception _ nil))]
+    (->> number
+         zero->seven
+         (get day-number->name))))
+
+(defmethod value->text :default [s _]
+  s)
+
+(defmulti values->text
+  "Parse a string with the values into a human-readable text"
+  (fn [_ field] field))
+
+(defmethod values->text :default
+  [s field]
+  (let [matcher (re-matcher value-regex s)]
+    (if (.matches matcher)
+      (let [unit (get field->name field)
+            start (.group matcher "start")
+            step (.group matcher "step")
+            end (.group matcher "end")
+            parsed-start (value->text start field)
+            parsed-step (value->ordinal step)
+            parsed-end (value->text end field)]
+        (cond
+          (and (= start "*") (nil? step)) (format "every %s" unit)
+          (and (= start "*") (some? step)) (format "every %s %s" parsed-step unit)
+          (and start (nil? end)) (format "%s %s" unit parsed-start)
+          (and start end (nil? step)) (format "every %s from %s through %s"
+                                              unit parsed-start parsed-end)
+          (and start end step) (format "every %s %s from %s through %s"
+                                       parsed-step unit parsed-start parsed-end)
+          :else nil))
+      nil)))
+
+(defn field->text
+  "Parse field values into a human readable text"
+  [s field]
+  (let [lists (string/split s list-regex)
+        parsed-values (map #(values->text % field) lists)
+        result (string/join ", " parsed-values)]
+    result))
 
 ;; Date-Time sequence generation
 
@@ -144,11 +262,6 @@
   "Get current date time"
   ^java.time.ZonedDateTime []
   (ZonedDateTime/now ^java.time.ZoneId utc-tz))
-
-(defn- get-current-year
-  "Get current year for current ZonedDateTime in UTC"
-  []
-  (.getYear (get-current-dt)))
 
 (defn get-dt
   "Return ZonedDateTime in UTC or nil for invalid Date-Time"
@@ -162,8 +275,8 @@
 (defn- range-days
   "Get a seq of days of month"
   []
-  (range (get-in range-values [:day-of-month :start])
-         (get-in range-values [:day-of-month :end])))
+  (range (get-in field->range [:day-of-month :start])
+         (get-in field->range [:day-of-month :end])))
 
 (defn seq-contains?
   "Return true if a sequence contains the element"
@@ -185,27 +298,45 @@
   [^java.time.ZonedDateTime current-dt ^java.time.ZonedDateTime another-dt]
   (.isAfter another-dt current-dt))
 
-;; Entrypoint
+;; Entrypoints
 
-(defn get-dt-seq
-  "Get a lazy sequence of future ZonedDateTime objects that satisfy crontab string.
+(defn cron->dt
+  "Parse crontab string into a lazy seq of ZonedDateTime objects"
+  [s]
+  (let [parsed-cron (cron->map s)
+        now (get-current-dt)
+        current-year (.getYear now)
+        years (filter #(>= % current-year) (range))]
+    (when parsed-cron
+      (for [year years
+            month (:month parsed-cron)
+            day (range-days)
+            hour (:hour parsed-cron)
+            minute (:minute parsed-cron)
+            :let [dt (get-dt year month day hour minute)]
+            :when (and
+                   (dt-valid? dt (:day-of-month parsed-cron) (:day-of-week parsed-cron))
+                   (dt-future? now dt))]
+        dt))))
 
-  When years range is ommited get a sequence for 1 year starting from the current one."
-  ([s]
-   (let [year-from (get-current-year)
-         year-to (+ year-from 1 1)]
-     (get-dt-seq s year-from year-to)))
-  ([s year-from year-to]
-   (let [parsed-cron (parse-cron s)
-         now (get-current-dt)]
-     (when parsed-cron
-       (for [year (range year-from year-to)
-             month (:month parsed-cron)
-             day (range-days)
-             hour (:hour parsed-cron)
-             minute (:minute parsed-cron)
-             :let [dt (get-dt year month day hour minute)]
-             :when (and
-                    (dt-valid? dt (:day-of-month parsed-cron) (:day-of-week parsed-cron))
-                    (dt-future? now dt))]
-         dt)))))
+(defn cron->text
+  "Parse crontab string into a human-readable text"
+  [s]
+  (try
+    (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
+          day-of-month' (field->text day-of-month :day-of-month)
+          day-of-week' (field->text day-of-week :day-of-week)
+          minute' (field->text minute :minute)
+          hour' (field->text hour :hour)
+          day' (cond
+                (and (= day-of-month "*")
+                     (not (= day-of-week "*"))) (field->text day-of-week :day-of-week)
+                (and (not (= day-of-month "*"))
+                     (= day-of-week "*")) (field->text day-of-month :day-of-month)
+                (and (not (= day-of-month "*"))
+                     (not (= day-of-week "*"))) (format "%s or %s" day-of-month' day-of-week')
+                :else "every day")
+          month' (field->text month :month)
+          text (format "at %s, past %s, on %s, in %s" minute' hour' day' month')]
+      text)
+    (catch Exception _ nil)))
