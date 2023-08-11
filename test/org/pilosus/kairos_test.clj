@@ -254,21 +254,65 @@
 
 ;; Parsing cront into a human-readable text
 
-(def params-cron->texts-ok
-  [["12,14,17,35-45/3 */2 27 2 *"
-    "At minute 12, 14, 17, and every 3rd minute from 35 through 45 past every 2nd hour on day-of-month 27 in February"]
-   ["39 9 * * wed-fri"
-    {:minute '(39),
-     :hour '(9),
-     :day-of-month '(),
-     :month '(1 2 3 4 5 6 7 8 9 10 11 12),
-     :day-of-week '(3 4 5)}
-    "At 09:39 on every day-of-week from Wednesday through Friday"]
-   ["5 23 12 * Wed"
-    "At 23:05 on day-of-month 12 and on Wednesday"]
-   ["0 10 3,7 Dec Mon"
-    "At 10:00, on 3rd and 7th or every Monday of December"]
-   ["* * * * *"
-    "At every minute"]
-   ["0 10 3,7 12 Tue-Sat * * *"
-    "Excessive elements ignored"]])
+(def params-value->ordinal
+  [["1" "1st" "First"]
+   ["2" "2nd" "Second"]
+   ["3" "3rd" "Third"]
+   ["4" "4th" "Fourth"]
+   ["9" "9th" "Nineth"]
+   ["11" "11th" "Eleventh"]
+   ["12" "12th" "Twelfth"]
+   ["13" "13th" "Thirteenth"]
+   ["213" "213th" "Two hundred and thirteenth"]
+   ["301" "301st" "Three hundred and first"]
+   ["cannot parse" nil "Value cannot be parsed into integer"]])
+
+(deftest test-value->ordinal
+  (testing "Test parsing integer into a ordinal integer number with the suffix"
+    (doseq [[value expected description] params-value->ordinal]
+      (testing description
+        (is (= expected (kairos/value->ordinal value)))))))
+
+(def params-cron->text-ok
+  [["* * * * *"
+    "at every minute, past every hour, on every day, in every month"
+    "All asterisk values"]
+   ["3-17 * * * *"
+    "at every minute from 3 through 17, past every hour, on every day, in every month"
+    "Simple range value"]
+   ["10-20/2 * * * *"
+    "at every 2nd minute from 10 through 20, past every hour, on every day, in every month"
+    "Explicit range with the step value"]
+   ["*/2 * * * *"
+    "at every 2nd minute, past every hour, on every day, in every month"
+    "Asterisk with the step value"]
+   ["1,2,17 * * * *"
+    "at minute 1, minute 2, minute 17, past every hour, on every day, in every month"
+    "Simple list of values"]
+   ["1,2,15-20,45-55/3 * * * *"
+    "at minute 1, minute 2, every minute from 15 through 20, every 3rd minute from 45 through 55, past every hour, on every day, in every month"
+    "Complex list of values"]
+   ["* * 1-15 * *"
+    "at every minute, past every hour, on every day of month from 1 through 15, in every month"
+    "Day of month only"]
+   ["* * * * 1-4"
+    "at every minute, past every hour, on every day of week from Monday through Thursday, in every month"
+    "Day of week only"]
+   ["* * 1-15 * 1-4"
+    "at every minute, past every hour, on every day of month from 1 through 15 or every day of week from Monday through Thursday, in every month"
+    "Day of month OR day of week"]
+   ["* * * Jan-May *"
+    "at every minute, past every hour, on every day, in every month from January through May"
+    "Named range month"]
+   ["1,2,15-20,45-55/3 0,2,3-9/2 1,3,7-11/2 Jan,Mar,Jun,9-12/2 Mon-Wed,7"
+    "at minute 1, minute 2, every minute from 15 through 20, every 3rd minute from 45 through 55, past hour 0, hour 2, every 2nd hour from 3 through 9, on day of month 1, day of month 3, every 2nd day of month from 7 through 11 or every day of week from Monday through Wednesday, day of week Sunday, in month January, month March, month June, every 2nd month from September through December"
+    "Very complex crontab entry"]
+   ["cannot be parsed"
+    nil
+    "Wrong value"]])
+
+(deftest test-cron->text-ok
+  (testing "Test parsing crontab entry into a human-readable text"
+    (doseq [[cron expected description] params-cron->text-ok]
+      (testing cron
+        (is (= expected (kairos/cron->text cron)) description)))))
