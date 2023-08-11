@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file. This change
 
 Nothing yet in `Unreleased` section.
 
+## [v0.2.0] - 2023-08-11
+
+**NB!** Release breaks backward compatibility. See release notes.
+
+### Added
+- Parse a crontab entry into a human-readable English text with
+  `cron->text` function
+  ([#3](https://github.com/pilosus/kairos/issues/3))
+- Parse a crontab entry into a lazy sequence of
+  `java.time.ZonedDateTime` objects with `cron->dt` function (used
+  instead of `get-dt-seq`, year range function arguments dropped)
+
+### Changed
+- Function `parse-cron` renamed to `cron->map`
+
+### Removed
+- Function `get-dt-seq` removed, use `cron->dt` instead
+
 ## [v0.1.14] - 2023-07-01
 ### Changed
 - Release version's [patch](https://semver.org/) part uses `git
@@ -28,7 +46,9 @@ Nothing yet in `Unreleased` section.
   conditions. Objects get generated as a lazy sequence.
 - Project CI/CD workflows
 
-[Unreleased]: https://github.com/pilosus/kairos/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.0...HEAD
+[v0.2.0]: https://github.com/pilosus/kairos/compare/v0.1.14...v0.2.0
+[v0.1.14]: https://github.com/pilosus/kairos/compare/v0.1.3...v0.1.14
 [v0.1.3]: https://github.com/pilosus/kairos/compare/v0.1.2...v0.1.3
 [v0.1.2]: https://github.com/pilosus/kairos/compare/v0.1.1...v0.1.2
 [v0.1.1]: https://github.com/pilosus/kairos/compare/v0.0.0...v0.1.1

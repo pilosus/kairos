@@ -8,7 +8,7 @@
 (defn- get-version
   "FIXME: change MAJOR.MINOR parts manually if needed"
   [patch]
-  (format "0.1.%s" patch))
+  (format "0.2.%s" patch))
 
 (def version (get-version (b/git-count-revs nil)))
 (def snapshot (get-version "9999-SNAPSHOT"))

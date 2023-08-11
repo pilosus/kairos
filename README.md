@@ -5,9 +5,9 @@
 
 Crontab parsing library for Clojure.
 
-Supports [vixie-cron](https://man7.org/linux/man-pages/man5/crontab.5.html)
-syntax. Generates a lazy sequence of `java.time.ZonedDateTime` objects
-in `UTC` timezone that satisfy given `crontab` constraints.
+- Supports [vixie-cron](https://man7.org/linux/man-pages/man5/crontab.5.html) syntax
+- Parses a `crontab` entry into a lazy sequence of `java.time.ZonedDateTime` objects in `UTC` timezone
+- Explains a `crontab` entry in plain English
 
 *Kairos* (καιρός) means the right, critical, or opportune moment.
 
@@ -20,34 +20,21 @@ in `UTC` timezone that satisfy given `crontab` constraints.
 ```clojure
 (require '[org.pilosus.kairos :as kairos])
 
-;; 1. Generate a lazy sequence of java.time.ZonedDateTime[UTC] objects
-;; that satisfy given crontab constraints:
-(kairos/get-dt-seq "0 10 3,7 Dec Mon")
+;; 1. Generate a sequence of Date Time objects for a given crontab entry
+(kairos/cron->dt "0 10 3,7 Dec Mon")
 
 ;; (#object[java.time.ZonedDateTime 0x55eb9b05 "2023-12-03T10:00Z[UTC]"]
 ;;  #object[java.time.ZonedDateTime 0x2ed291ba "2023-12-04T10:00Z[UTC]"]
 ;;  ...
 ;;  #object[java.time.ZonedDateTime 0x749adbda "2024-12-30T10:00Z[UTC]"])
 
-;; 2. Generate a Date-Time sequence for a range of years,
-;; from start (inclusive) to end (exclusive):
-(kairos/get-dt-seq "0 10 3,7 Dec Mon" 2030 2032)
 
-;; ("2030-12-02T10:00Z[UTC]"
-;;  "2030-12-03T10:00Z[UTC]"
-;;   ...
-;;  "2031-12-29T10:00Z[UTC]")
+;; 2. Explain a crontab enrty in plain English
+(kairos/cron->text "0 6,10-18/2,22 * * Mon-Fri")
 
-;; 3. Parse crontab string into a map:
-(kairos/parse-cron "12,14,17,35-45/3 */2 27 Feb-Jun *")
-
-;; {:minute (12 14 17 35 38 41 44),
-;;  :hour (0 2 4 6 8 10 12 14 16 18 20 22),
-;;  :day-of-month (27),
-;;  :month (2 3 4 5 6),
-;;  :day-of-week ()}
+;; at minute 0, past hour 6, every 2nd hour from 10 through 18, hour 22, on every day of week from Monday through Friday, in every month
 ```
 
 ## License
 
-See [LICENSE](https://github.com/pilosus/kairos/tree/main/LICENSE)
+See [LICENSE](https://github.com/pilosus/kairos/tree/main/LICENSE).
