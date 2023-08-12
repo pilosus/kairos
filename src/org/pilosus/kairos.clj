@@ -235,14 +235,28 @@
             parsed-start (value->text start field)
             parsed-step (value->ordinal step)
             parsed-end (value->text end field)]
+        ;; start is guaranteed to be non-empty by the regex,
+        ;; yet we keep it in the cond for readability
         (cond
-          (and (= start "*") (nil? step)) (format "every %s" unit)
-          (and (= start "*") (some? step)) (format "every %s %s" parsed-step unit)
-          (and start (nil? end)) (format "%s %s" unit parsed-start)
-          (and start end (nil? step)) (format "every %s from %s through %s"
-                                              unit parsed-start parsed-end)
-          (and start end step) (format "every %s %s from %s through %s"
-                                       parsed-step unit parsed-start parsed-end)
+          (and
+           (= start "*")
+           (nil? step)) (format "every %s" unit)
+          (and
+           (= start "*")
+           (some? step)) (format "every %s %s" parsed-step unit)
+          (and
+           (some? start)
+           (nil? end)) (format "%s %s" unit parsed-start)
+          (and
+           (some? start)
+           (some? end)
+           (nil? step)) (format "every %s from %s through %s"
+                                unit parsed-start parsed-end)
+          (and
+           (some? start)
+           (some? end)
+           (some? step)) (format "every %s %s from %s through %s"
+                                 parsed-step unit parsed-start parsed-end)
           :else nil))
       nil)))
 
@@ -306,7 +320,7 @@
   (let [parsed-cron (cron->map s)
         now (get-current-dt)
         current-year (.getYear now)
-        years (filter #(>= % current-year) (range))]
+        years (iterate inc current-year)]
     (when parsed-cron
       (for [year years
             month (:month parsed-cron)
