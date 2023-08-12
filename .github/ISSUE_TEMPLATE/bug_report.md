@@ -19,7 +19,7 @@ Steps to reproduce the behavior:
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Application setup*
+**Your setup*
  - Library version [e.g. 0.1.2]
  - Clojure version [e.g. 1.11.1.1273]
  - Java version [e.g. OpenJDK 17.0.2]
