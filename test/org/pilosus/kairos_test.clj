@@ -252,6 +252,12 @@
           (let [result (take quantity (kairos/cron->dt crontab))]
             (is (= expected result) description)))))))
 
+(deftest test-cron->dt-empty-years
+  (testing "Test the for-loop as if years binding were empty to increase coverage"
+    (with-redefs [clojure.core/iterate (constantly (range 2010 2021))]
+      (let [result (take 10 (kairos/cron->dt "* * * * *"))]
+        (is (= 0 (count result)))))))
+
 ;; Parsing cront into a human-readable text
 
 (def params-value->ordinal
@@ -272,6 +278,26 @@
     (doseq [[value expected description] params-value->ordinal]
       (testing description
         (is (= expected (kairos/value->ordinal value)))))))
+
+(def params-values->text
+  [["" :minute nil "Empty"]
+   ["-20" :minute nil "No start"]
+   ["10-" :minute nil "No end"]
+   ["/" :minute nil "No step"]
+   ["a-z/c" :minute nil "Non-integers"]
+   ["*" :minute "every minute" "Asterisk"]
+   ["*/5" :minute "every 5th minute" "Asterisk with step"]
+   ["10" :minute "minute 10" "Single value"]
+   ["10-20" :minute "every minute from 10 through 20" "Range"]
+   ["10-20/3" :minute "every 3rd minute from 10 through 20" "Range with step"]
+   ["10-20/3" :no-such-field "every 3rd null from 10 through 20"
+    "Non existent field name ignored"]])
+
+(deftest test-values->text
+  (testing "Test parsing values in a field"
+    (doseq [[s field expected description] params-values->text]
+      (testing description
+        (is (= expected (kairos/values->text s field)))))))
 
 (def params-cron->text-ok
   [["* * * * *"
