@@ -14,7 +14,7 @@
 ;; SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
 
 (ns org.pilosus.kairos-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest is testing]]
             [org.pilosus.kairos :as kairos]))
 
 ;; Helpers
@@ -85,6 +85,40 @@
     (doseq [[dt days-of-month days-of-week expected description] params-dt-valid?]
       (testing description
         (is (= expected (kairos/dt-valid? dt days-of-month days-of-week)))))))
+
+(def params-validate-value
+  [[5 12 :minute false "minute, start, end, ok"]
+   [5 60 :minute false "minute, start, end, end on edge, ok"]
+   [0 12 :minute false "minute, start, end, start on edge, ok"]
+   [0 60 :minute false "minute, start, end, start and end on edge, ok"]
+   [0 nil :minute false "minute, start, ok"]
+   [nil 55 :minute false "minute, end, ok"]
+   [nil 60 :minute false "minute, end, on edge, ok"]
+   [0 61 :minute true "minute, start, end, end is greater, fail"]
+   [61 nil :minute true "minute, start, start is greater, fail"]
+   [-10 nil :minute true "minute, start, start is less, fail"]
+   [nil 61 :minute true "minute, end, end is greater, fail"]
+   [61 77 :minute true "minute, start, end, start is greater, end is greater, fail"]
+   [-10 77 :minute true "minute, start, end, start is less, end is greater, fail"]
+
+   [0 6 :day-of-week false "day-of-week start end ok"]
+   [0 nil :day-of-week false "day-of-week start only ok"]
+   [nil 6 :day-of-week false "day-of-week end only ok"]
+   [0 8 :day-of-week false "day-of-week start end on edges ok"]
+   [0 9 :day-of-week true "day-of-week start end on edges fail"]
+   [9 nil :day-of-week true "day-of-week start only fail"]
+   [nil 9 :day-of-week true "day-of-week end only fail"]
+
+   [0 10 :no-such-field true "no such field type"]])
+
+(deftest test-validate-value
+  (testing "Value validation for different field"
+    (doseq [[start end field thrown description] params-validate-value]
+      (testing description
+        (if thrown
+          (is (thrown? clojure.lang.ExceptionInfo
+                       (kairos/validate-value start end field)))
+          (is (kairos/validate-value start end field) true))))))
 
 ;; Parsing cron into a map of ranges
 
@@ -195,6 +229,29 @@
      (kairos/get-dt 1970 1 15 9 39)
      (kairos/get-dt 1970 1 16 9 39)]
     "At 09:39 on every day-of-week from Wednesday through Friday"]
+   ["0 21 * 12 sun-wed"
+    (kairos/get-dt 1970 12 1 20 0)
+    7
+    [(kairos/get-dt 1970 12 1 21 0)
+     (kairos/get-dt 1970 12 2 21 0)
+     (kairos/get-dt 1970 12 6 21 0)
+     (kairos/get-dt 1970 12 7 21 0)
+     (kairos/get-dt 1970 12 8 21 0)
+     (kairos/get-dt 1970 12 9 21 0)
+     (kairos/get-dt 1970 12 13 21 0)]
+    "At 21:00 on every day-of-week from Sunday through Wednesday in December"]
+   ["0 21 * 12 0-7"
+    (kairos/get-dt 1970 12 1 20 0)
+    8
+    [(kairos/get-dt 1970 12 1 21 0)
+     (kairos/get-dt 1970 12 2 21 0)
+     (kairos/get-dt 1970 12 3 21 0)
+     (kairos/get-dt 1970 12 4 21 0)
+     (kairos/get-dt 1970 12 5 21 0)
+     (kairos/get-dt 1970 12 6 21 0)
+     (kairos/get-dt 1970 12 7 21 0)
+     (kairos/get-dt 1970 12 8 21 0)]
+    "At 21:00 on every day-of-week from Sunday through Sunday in December"]
    ["0 10 3,7 Dec Mon"
     (kairos/get-dt 1970 1 1 0 0)
     10
@@ -279,7 +336,7 @@
       (testing description
         (is (= expected (kairos/value->ordinal value)))))))
 
-(def params-values->text
+(def params-value->text
   [["" :minute nil "Empty"]
    ["-20" :minute nil "No start"]
    ["10-" :minute nil "No end"]
@@ -293,11 +350,11 @@
    ["10-20/3" :no-such-field "every 3rd null from 10 through 20"
     "Non existent field name ignored"]])
 
-(deftest test-values->text
+(deftest test-value->text
   (testing "Test parsing values in a field"
-    (doseq [[s field expected description] params-values->text]
+    (doseq [[s field expected description] params-value->text]
       (testing description
-        (is (= expected (kairos/values->text s field)))))))
+        (is (= expected (kairos/value->text s field)))))))
 
 (def params-cron->text-ok
   [["* * * * *"
@@ -342,3 +399,28 @@
     (doseq [[cron expected description] params-cron->text-ok]
       (testing cron
         (is (= expected (kairos/cron->text cron)) description)))))
+
+(def params-cron-validate
+  [["0 22 * * *"
+    true
+    {:ok? true}
+    "valid"]
+   ["0-65 22 * * *"
+    false
+    {:ok? false :error "Value error in 'minute' field. Given value: [0, 66). Expected: [0, 60)"}
+    "Minute end out of range"]
+   ["65 22 * * *"
+    false
+    {:ok? false :error "Value error in 'minute' field. Given value: [65, 66). Expected: [0, 60)"}
+    "Minute start out of range"]
+   ["15-12 22 * * *"
+    false
+    {:ok? false :error "Value error in 'minute' field. Given value: [15, 13). Expected: [0, 60)"}
+    "Minute start is greater than the end"]])
+
+(deftest test-cron-validate
+  (testing "Test cron validation messages"
+    (doseq [[cron valid? expected description] params-cron-validate]
+      (testing cron
+        (is (= valid? (kairos/cron-valid? cron)) description)
+        (is (= expected (kairos/cron-validate cron)) description)))))
