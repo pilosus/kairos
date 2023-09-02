@@ -347,8 +347,8 @@
   [^java.time.ZonedDateTime current-dt ^java.time.ZonedDateTime another-dt]
   (.isAfter another-dt current-dt))
 
-(defn- cron->map-throwable
-  "Parse crontab string into map of ranges, throw an exception if
+(defn- cron->map-unsafe
+  "Parse a crontab string into a map of ranges, throw an exception if
   parsing fails"
   [s]
   (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
@@ -367,9 +367,9 @@
 ;; Entrypoints
 
 (defn cron->map
-  "Parse crontab string into map of ranges safely"
+  "Parse a crontab string into a map of ranges"
   [s]
-  (try (cron->map-throwable s)
+  (try (cron->map-unsafe s)
        (catch Exception _ nil)))
 
 (defn cron-valid?
@@ -380,7 +380,7 @@
 (defn cron-validate
   "Return validation status and error message for a given crontab entry"
   [s]
-  (try (cron->map-throwable s)
+  (try (cron->map-unsafe s)
        {:ok? true}
        (catch clojure.lang.ExceptionInfo e
          (let [{:keys [field given expected]} (ex-data e)
@@ -413,7 +413,7 @@
   "Parse crontab string into a human-readable text"
   [s]
   (try
-    (cron->map-throwable s)
+    (cron->map-unsafe s)
     (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
           day-of-month' (field->text day-of-month :day-of-month)
           day-of-week' (field->text day-of-week :day-of-week)
