@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
-## [v0.2.21] - 2023-09-02
+## [v0.2.20] - 2023-09-02
 
 ### Changed
 - `cron->dt`, `cron->text` return `nil` if a given crontab string
@@ -56,7 +56,8 @@ All notable changes to this project will be documented in this file. This change
   conditions. Objects get generated as a lazy sequence.
 - Project CI/CD workflows
 
-[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.16...HEAD
+[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.20...HEAD
+[v0.2.20]: https://github.com/pilosus/kairos/compare/v0.2.16...v0.2.20
 [v0.2.16]: https://github.com/pilosus/kairos/compare/v0.1.14...v0.2.16
 [v0.1.14]: https://github.com/pilosus/kairos/compare/v0.1.3...v0.1.14
 [v0.1.3]: https://github.com/pilosus/kairos/compare/v0.1.2...v0.1.3
