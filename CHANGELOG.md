@@ -3,7 +3,17 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
-Nothing yet in `Unreleased` section.
+## [v0.2.21] - 2023-09-02
+
+### Changed
+- `cron->dt`, `cron->text` return `nil` if a given crontab string
+  cannot be parsed ([#7](https://github.com/pilosus/kairos/issues/7))
+
+### Added
+- `cron-validate` function takes in a crontab string and returns a map
+  of `{:ok? <bool> :error <nilable-str>}` explaining parsing errors
+- `cron-valid?` function takes in a crontab string and returns a
+  boolean value to show if parsing was successful
 
 ## [v0.2.16] - 2023-08-11
 
