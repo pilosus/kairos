@@ -388,7 +388,9 @@
                            (name field)
                            (:start given) (:end given)
                            (:start expected) (:end expected))]
-           {:ok? false :error msg}))))
+           {:ok? false :error msg}))
+       (catch Exception _
+         {:ok? false :error "Invalid crontab format"})))
 
 (defn cron->dt
   "Parse crontab string into a lazy seq of ZonedDateTime objects"

@@ -416,7 +416,11 @@
    ["15-12 22 * * *"
     false
     {:ok? false :error "Value error in 'minute' field. Given value: [15, 13). Expected: [0, 60)"}
-    "Minute start is greater than the end"]])
+    "Minute start is greater than the end"]
+   ["Mon-Fri"
+    false
+    {:ok? false :error "Invalid crontab format"}
+    "Wrong crontab format"]])
 
 (deftest test-cron-validate
   (testing "Test cron validation messages"
