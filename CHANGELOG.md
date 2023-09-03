@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
+Nothing here yet.
+
+## [v0.2.22] - 2023-09-03
+
+### Fixed
+
+- Base exception handling for `cron-validate` function
+  ([#9](https://github.com/pilosus/kairos/issues/9))
+
 ## [v0.2.20] - 2023-09-02
 
 ### Changed
@@ -56,7 +65,8 @@ All notable changes to this project will be documented in this file. This change
   conditions. Objects get generated as a lazy sequence.
 - Project CI/CD workflows
 
-[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.20...HEAD
+[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.22...HEAD
+[v0.2.22]: https://github.com/pilosus/kairos/compare/v0.2.20...v0.2.22
 [v0.2.20]: https://github.com/pilosus/kairos/compare/v0.2.16...v0.2.20
 [v0.2.16]: https://github.com/pilosus/kairos/compare/v0.1.14...v0.2.16
 [v0.1.14]: https://github.com/pilosus/kairos/compare/v0.1.3...v0.1.14
