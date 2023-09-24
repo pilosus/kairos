@@ -1,5 +1,5 @@
 {:paths ["src"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}}
+ :deps {}
  :aliases
  {;; Builing
   :build {:deps {io.github.clojure/tools.build
@@ -61,8 +61,8 @@
   ;; clojure -T:outdated :upgrade true :force true
   :outdated
   {:replace-paths ["."]
-   :replace-deps  {com.github.liquidz/antq {:mvn/version "2.5.1109"}
-                   org.slf4j/slf4j-nop {:mvn/version "2.0.7"}}
+   :replace-deps  {com.github.liquidz/antq {:mvn/version "2.6.1121"}
+                   org.slf4j/slf4j-nop {:mvn/version "2.0.9"}}
    :exec-fn antq.tool/outdated
    :exec-args {:directory ["."] ;; default
                :exclude ["org.clojure/tools.deps.alpha"]
