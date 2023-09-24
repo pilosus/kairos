@@ -11,6 +11,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        java: [ '11', '17', '20' ]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,7 +21,7 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java }}
       - name: Setup Clojure
         uses: DeLaGuardo/setup-clojure@12.1
         with:
