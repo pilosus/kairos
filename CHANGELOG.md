@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file. This change
 
 Nothing here yet.
 
+## [v0.2.26] - 2023-09-24
+
+### Changed
+- Clojure removed from package dependencies
+
 ## [v0.2.22] - 2023-09-03
 
 ### Fixed
@@ -65,7 +70,8 @@ Nothing here yet.
   conditions. Objects get generated as a lazy sequence.
 - Project CI/CD workflows
 
-[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.22...HEAD
+[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.26...HEAD
+[v0.2.26]: https://github.com/pilosus/kairos/compare/v0.2.22...v0.2.26
 [v0.2.22]: https://github.com/pilosus/kairos/compare/v0.2.20...v0.2.22
 [v0.2.20]: https://github.com/pilosus/kairos/compare/v0.2.16...v0.2.20
 [v0.2.16]: https://github.com/pilosus/kairos/compare/v0.1.14...v0.2.16
