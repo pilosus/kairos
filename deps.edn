@@ -3,8 +3,8 @@
  :aliases
  {;; Builing
   :build {:deps {io.github.clojure/tools.build
-                 {:git/tag "v0.9.5" :git/sha "24f2894"}
-                 slipset/deps-deploy {:mvn/version "0.2.1"}}
+                 {:git/tag "v0.9.6" :git/sha "8e78bcc"}
+                 slipset/deps-deploy {:mvn/version "0.2.2"}}
           :ns-default build}
 
   ;; Testing
@@ -41,14 +41,14 @@
   ;; Linting
   ;; clojure -M:eastwood
   :eastwood
-  {:extra-deps {jonase/eastwood {:mvn/version "1.4.0"}}
+  {:extra-deps {jonase/eastwood {:mvn/version "1.4.2"}}
    :main-opts ["-m" "eastwood.lint"]}
 
   ;; Code formatting
   ;; clojure -X:fmt:fmtcheck
   ;; clojure -X:fmt:fmtfix
   :fmt
-  {:extra-deps {io.github.weavejester/cljfmt {:git/tag "0.11.2" :git/sha "fb26b22"}}}
+  {:extra-deps {io.github.weavejester/cljfmt {:git/tag "0.12.0" :git/sha "434408f"}}}
   :fmtfix
   {:exec-fn cljfmt.tool/fix
    :exec-args {}}
@@ -61,7 +61,7 @@
   ;; clojure -T:outdated :upgrade true :force true
   :outdated
   {:replace-paths ["."]
-   :replace-deps  {com.github.liquidz/antq {:mvn/version "2.6.1121"}
+   :replace-deps  {com.github.liquidz/antq {:mvn/version "2.7.1147"}
                    org.slf4j/slf4j-nop {:mvn/version "2.0.9"}}
    :exec-fn antq.tool/outdated
    :exec-args {:directory ["."] ;; default

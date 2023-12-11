@@ -4,7 +4,7 @@
   <groupId>org.pilosus</groupId>
   <artifactId>kairos</artifactId>
   <name>org.pilosus/kairos</name>
-  <description>Crontab parsing library for Clojure</description>
+  <description>Crontab parsing library that also speaks English</description>
   <url>https://github.com/pilosus/kairos</url>
   <licenses>
     <license>
