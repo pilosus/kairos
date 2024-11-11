@@ -23,7 +23,7 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
       - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@12.5
+        uses: DeLaGuardo/setup-clojure@12.6
         with:
           cli: '1.11.1.1429'
       - name: Cache Clojure Deps
