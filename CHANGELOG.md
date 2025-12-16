@@ -81,7 +81,8 @@ Nothing here yet.
   conditions. Objects get generated as a lazy sequence.
 - Project CI/CD workflows
 
-[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.26...HEAD
+[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.45...HEAD
+[v0.2.45]: https://github.com/pilosus/kairos/compare/v0.2.26...v0.2.45
 [v0.2.26]: https://github.com/pilosus/kairos/compare/v0.2.22...v0.2.26
 [v0.2.22]: https://github.com/pilosus/kairos/compare/v0.2.20...v0.2.22
 [v0.2.20]: https://github.com/pilosus/kairos/compare/v0.2.16...v0.2.20
