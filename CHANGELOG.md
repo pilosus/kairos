@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file. This change
 
 Nothing here yet.
 
+## [v0.2.45] - 2025-12-16
+
+### Added
+
+- Documentation for contributors and release managers
+
+### Changed
+
+- CI pipeline dependencies bumped
+- `Makefile` to run the CI pipeline locally
+
 ## [v0.2.26] - 2023-09-24
 
 ### Changed
