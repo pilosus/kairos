@@ -42,6 +42,9 @@ make all
 5. After release preparation, add a tag with `git tag vX.Y.Z`, the CI
    pipeline tests, builds and deploys a new package version to Clojars
 
+6. Create a new GitHub release based on the new tag
+   [here](https://github.com/pilosus/kairos/releases).
+
 
 ### Clojars
 
