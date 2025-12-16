@@ -39,8 +39,11 @@ make all
 - Move changes from `Unreleased` section to a new release section
 - Add a link to `git diff`
 
-5. Update current tag mentions in `README.md`:
+5. After release preparation, add a tag with `git tag vX.Y.Z`, the CI
+   pipeline tests, builds and deploys a new package version to Clojars
 
-- Usage examples
 
-6. After release preparation, add a tag with `git tag X.Y.Z`
+### Clojars
+
+Clojars and cljdoc descriptions are based on the `./template/pom.xml`,
+update it as needed.
