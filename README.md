@@ -3,7 +3,7 @@
 [![Clojars Project](https://img.shields.io/clojars/v/org.pilosus/kairos.svg)](https://clojars.org/org.pilosus/kairos)
 [![codecov](https://codecov.io/gh/pilosus/kairos/branch/main/graph/badge.svg?token=8OKTCKNq17)](https://codecov.io/gh/pilosus/kairos)
 
-Crontab parsing library for Clojure.
+Crontab parser for Clojure with plain-English cron explanations.
 
 - Supports [vixie-cron](https://man7.org/linux/man-pages/man5/crontab.5.html) syntax
 - Parses a `crontab` entry into a lazy sequence of `java.time.ZonedDateTime` objects in `UTC` timezone

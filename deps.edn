@@ -3,7 +3,7 @@
  :aliases
  {;; Builing
   :build {:deps {io.github.clojure/tools.build
-                 {:git/tag "v0.9.6" :git/sha "8e78bcc"}
+                 {:git/tag "v0.10.11" :git/sha "c6c670a"}
                  slipset/deps-deploy {:mvn/version "0.2.2"}}
           :ns-default build}
 
@@ -16,7 +16,7 @@
   {:extra-paths ["test"]
    :extra-deps
    {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
-    org.clojure/test.check {:mvn/version "1.1.1"}}
+    org.clojure/test.check {:mvn/version "1.1.2"}}
    :main-opts ["-m" "cognitect.test-runner"]
    :exec-fn cognitect.test-runner.api/test}
 
@@ -41,14 +41,14 @@
   ;; Linting
   ;; clojure -M:eastwood
   :eastwood
-  {:extra-deps {jonase/eastwood {:mvn/version "1.4.2"}}
+  {:extra-deps {jonase/eastwood {:mvn/version "1.4.3"}}
    :main-opts ["-m" "eastwood.lint"]}
 
   ;; Code formatting
   ;; clojure -X:fmt:fmtcheck
   ;; clojure -X:fmt:fmtfix
   :fmt
-  {:extra-deps {io.github.weavejester/cljfmt {:git/tag "0.12.0" :git/sha "434408f"}}}
+  {:extra-deps {io.github.weavejester/cljfmt {:git/tag "0.15.6" :git/sha "5498e22"}}}
   :fmtfix
   {:exec-fn cljfmt.tool/fix
    :exec-args {}}
@@ -61,8 +61,8 @@
   ;; clojure -T:outdated :upgrade true :force true
   :outdated
   {:replace-paths ["."]
-   :replace-deps  {com.github.liquidz/antq {:mvn/version "2.7.1147"}
-                   org.slf4j/slf4j-nop {:mvn/version "2.0.9"}}
+   :replace-deps  {com.github.liquidz/antq {:mvn/version "2.11.1276"}
+                   org.slf4j/slf4j-nop {:mvn/version "2.0.17"}}
    :exec-fn antq.tool/outdated
    :exec-args {:directory ["."] ;; default
                :exclude ["org.clojure/tools.deps.alpha"]
