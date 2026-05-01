@@ -319,17 +319,18 @@
 
 (defn get-current-dt
   "Get current date time"
-  ^java.time.ZonedDateTime []
-  (ZonedDateTime/now ^java.time.ZoneId utc-tz))
+  (^java.time.ZonedDateTime [] (get-current-dt utc-tz))
+  (^java.time.ZonedDateTime [^java.time.ZoneId tz]
+   (ZonedDateTime/now ^java.time.ZoneId tz)))
 
 (defn get-dt
-  "Return ZonedDateTime in UTC or nil for invalid Date-Time"
-  [year month day hour minute]
-  (let [second 0
-        nanosecond 0
-        tz utc-tz]
-    (try (ZonedDateTime/of year month day hour minute second nanosecond tz)
-         (catch java.time.DateTimeException _ nil))))
+  "Return ZonedDateTime in given time zone/UTC or nil for invalid Date-Time"
+  ([year month day hour minute] (get-dt year month day hour minute utc-tz))
+  ([year month day hour minute tz]
+   (let [second 0
+         nanosecond 0]
+     (try (ZonedDateTime/of year month day hour minute second nanosecond tz)
+          (catch java.time.DateTimeException _ nil)))))
 
 (defn- range-days
   "Get a seq of days of month"
@@ -403,23 +404,45 @@
          {:ok? false :error "Invalid crontab format"})))
 
 (defn cron->dt
-  "Parse crontab string into a lazy seq of ZonedDateTime objects"
-  [s]
-  (let [parsed-cron (cron->map s)
-        now (get-current-dt)
-        current-year (.getYear now)
-        years (iterate inc current-year)]
-    (when parsed-cron
-      (for [year years
-            month (:month parsed-cron)
-            day (range-days)
-            hour (:hour parsed-cron)
-            minute (:minute parsed-cron)
-            :let [dt (get-dt year month day hour minute)]
-            :when (and
-                   (dt-valid? dt (:day-of-month parsed-cron) (:day-of-week parsed-cron))
-                   (dt-future? now dt))]
-        dt))))
+  "Parse crontab string into a lazy seq of ZonedDateTime objects
+  opts:
+    :start - ZonedDateTime after which to generate times (default: now).
+             Only the instant matters, not its timezone - results after
+             this point in time are included regardless of zone.
+    :tz    - ZoneId for generated datetimes (default: UTC)
+
+  "
+  ([s] (cron->dt s {}))
+  ([s {:keys [start tz]}]
+   (let [parsed-cron (cron->map s)
+         tz (or tz utc-tz)
+         start (or start (get-current-dt tz))
+         current-year (.getYear ^java.time.ZonedDateTime (.withZoneSameInstant ^java.time.ZonedDateTime start ^java.time.ZoneId tz))
+         years (iterate inc current-year)
+         results
+         (when parsed-cron
+           (for [year years
+                 month (:month parsed-cron)
+                 day (range-days)
+                 hour (:hour parsed-cron)
+                 minute (:minute parsed-cron)
+                 :let [dt (get-dt year month day hour minute tz)]
+                 :when (and
+                        (dt-valid?
+                         dt
+                         (:day-of-month parsed-cron)
+                         (:day-of-week parsed-cron))
+                        (dt-future? start dt))]
+             dt))]
+     results)))
+
+(comment
+  (take
+   3
+   (cron->dt
+    "@hourly"
+    {:start (get-dt 2026 5 2 0 16 (ZoneId/of "Europe/London"))
+     :tz (ZoneId/of "Europe/Vienna")})))
 
 (defn cron->text
   "Parse crontab string into a human-readable text"

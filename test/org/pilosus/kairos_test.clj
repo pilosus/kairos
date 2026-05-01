@@ -15,7 +15,8 @@
 
 (ns org.pilosus.kairos-test
   (:require [clojure.test :refer [deftest is testing]]
-            [org.pilosus.kairos :as kairos]))
+            [org.pilosus.kairos :as kairos])
+  (:import (java.time ZonedDateTime ZoneId)))
 
 ;; Helpers
 
@@ -202,9 +203,12 @@
 
 ;; Parsing cron into a lazy seq of ZonedDateTime objects
 
+(def vienna (ZoneId/of "Europe/Vienna"))   ;; UTC+1 in winter, UTC+2 in summer
+(def london (ZoneId/of "Europe/London"))   ;; UTC+0 in winter, UTC+1 in summer
+
 (def params-cron->dt
   [["12,14,17,35-45/3 */2 27 2 *"
-    (kairos/get-dt 1970 1 1 0 0)
+    {:start (kairos/get-dt 1970 1 1 0 0)}
     10
     [(kairos/get-dt 1970 2 27 0 12)
      (kairos/get-dt 1970 2 27 0 14)
@@ -218,7 +222,7 @@
      (kairos/get-dt 1970 2 27 2 17)]
     "At minute 12, 14, 17, and every 3rd minute from 35 through 45 past every 2nd hour on day-of-month 27 in February"]
    ["39 9 * * wed-fri"
-    (kairos/get-dt 1970 1 1 0 0)
+    {:start (kairos/get-dt 1970 1 1 0 0)}
     8
     [(kairos/get-dt 1970 1 1 9 39)
      (kairos/get-dt 1970 1 2 9 39)
@@ -230,7 +234,7 @@
      (kairos/get-dt 1970 1 16 9 39)]
     "At 09:39 on every day-of-week from Wednesday through Friday"]
    ["0 21 * 12 sun-wed"
-    (kairos/get-dt 1970 12 1 20 0)
+    {:start (kairos/get-dt 1970 12 1 20 0)}
     7
     [(kairos/get-dt 1970 12 1 21 0)
      (kairos/get-dt 1970 12 2 21 0)
@@ -241,7 +245,7 @@
      (kairos/get-dt 1970 12 13 21 0)]
     "At 21:00 on every day-of-week from Sunday through Wednesday in December"]
    ["0 21 * 12 0-7"
-    (kairos/get-dt 1970 12 1 20 0)
+    {:start (kairos/get-dt 1970 12 1 20 0)}
     8
     [(kairos/get-dt 1970 12 1 21 0)
      (kairos/get-dt 1970 12 2 21 0)
@@ -253,7 +257,7 @@
      (kairos/get-dt 1970 12 8 21 0)]
     "At 21:00 on every day-of-week from Sunday through Sunday in December"]
    ["0 10 3,7 Dec Mon"
-    (kairos/get-dt 1970 1 1 0 0)
+    {:start (kairos/get-dt 1970 1 1 0 0)}
     10
     [(kairos/get-dt 1970 12 3 10 0)
      (kairos/get-dt 1970 12 7 10 0)
@@ -267,7 +271,7 @@
      (kairos/get-dt 1971 12 20 10 0)]
     "At 10:00, on 3rd and 7th or every Monday of December"]
    ["0 0 * May 0-3"
-    (kairos/get-dt 1970 1 1 0 0)
+    {:start (kairos/get-dt 1970 1 1 0 0)}
     8
     [(kairos/get-dt 1970 5 3 0 0)
      (kairos/get-dt 1970 5 4 0 0)
@@ -279,7 +283,7 @@
      (kairos/get-dt 1970 5 13 0 0)]
     "At 00:00, Wednesday through Sunday of May"]
    ["0 0 * May 1,2,3,7"
-    (kairos/get-dt 1970 1 1 0 0)
+    {:start (kairos/get-dt 1970 1 1 0 0)}
     8
     [(kairos/get-dt 1970 5 3 0 0)
      (kairos/get-dt 1970 5 4 0 0)
@@ -291,7 +295,7 @@
      (kairos/get-dt 1970 5 13 0 0)]
     "At 00:00, Monday, Tuesday, Wednesday, Sunday of May"]
    ["* * * * *"
-    (kairos/get-dt 1970 1 1 0 0)
+    {:start (kairos/get-dt 1970 1 1 0 0)}
     5
     [(kairos/get-dt 1970 1 1 0 1)
      (kairos/get-dt 1970 1 1 0 2)
@@ -300,28 +304,28 @@
      (kairos/get-dt 1970 1 1 0 5)]
     "At every minute"]
    ["@yearly"
-    (kairos/get-dt 1970 1 1 0 0)
+    {:start (kairos/get-dt 1970 1 1 0 0)}
     3
     [(kairos/get-dt 1971 1 1 0 0)
      (kairos/get-dt 1972 1 1 0 0)
      (kairos/get-dt 1973 1 1 0 0)]
     "Every year on January 1st at 00:00"]
    ["@annually"
-    (kairos/get-dt 1970 1 1 0 0)
+    {:start (kairos/get-dt 1970 1 1 0 0)}
     3
     [(kairos/get-dt 1971 1 1 0 0)
      (kairos/get-dt 1972 1 1 0 0)
      (kairos/get-dt 1973 1 1 0 0)]
     "Every year on January 1st at 00:00"]
    ["@monthly"
-    (kairos/get-dt 1970 1 1 23 55)
+    {:start (kairos/get-dt 1970 1 1 23 55)}
     3
     [(kairos/get-dt 1970 2 1 0 0)
      (kairos/get-dt 1970 3 1 0 0)
      (kairos/get-dt 1970 4 1 0 0)]
     "Every 1st day of the month at 00:00"]
    ["@weekly"
-    (kairos/get-dt 1970 1 1 23 55)
+    {:start (kairos/get-dt 1970 1 1 23 55)}
     5
     [(kairos/get-dt 1970 1 4 0 0)
      (kairos/get-dt 1970 1 11 0 0)
@@ -330,7 +334,7 @@
      (kairos/get-dt 1970 2 1 0 0)]
     "Every week on Sundays at 00:00"]
    ["@daily"
-    (kairos/get-dt 1970 1 1 23 55)
+    {:start (kairos/get-dt 1970 1 1 23 55)}
     5
     [(kairos/get-dt 1970 1 2 0 0)
      (kairos/get-dt 1970 1 3 0 0)
@@ -339,23 +343,85 @@
      (kairos/get-dt 1970 1 6 0 0)]
     "Every day at 00:00"]
    ["@hourly"
-    (kairos/get-dt 1970 1 1 22 0)
+    {:start (kairos/get-dt 1970 1 1 22 0)}
     5
     [(kairos/get-dt 1970 1 1 23 0)
      (kairos/get-dt 1970 1 2 0 0)
      (kairos/get-dt 1970 1 2 1 0)
      (kairos/get-dt 1970 1 2 2 0)
      (kairos/get-dt 1970 1 2 3 0)]
-    "Every hour at 00:00"]])
+    "Every hour at 00:00"]
+
+   ;;
+   ;; start & tz
+   ;;
+
+   ;; use 1975+ for London tests because the UK used BST (UTC+1)
+   ;; year-round from 1968-1971, making London offsets equal to Vienna in 1970.
+   ;; In 1975 January: Vienna = UTC+1, London = UTC+0.
+
+   ;; Basic: start and tz in the same zone
+   ["@hourly"
+    {:start (kairos/get-dt 1975 1 1 22 0 vienna) :tz vienna}
+    3
+    [(kairos/get-dt 1975 1 1 23 0 vienna)
+     (kairos/get-dt 1975 1 2 0 0 vienna)
+     (kairos/get-dt 1975 1 2 1 0 vienna)]
+    "Same zone for start and tz"]
+
+   ;; start in Vienna (UTC+1), output in London (UTC+0).
+   ;; Vienna 22:00 = UTC 21:00.
+   ;; London wall-clock 22:00 = UTC 22:00 > UTC 21:00 -> first result.
+   ["@hourly"
+    {:start (kairos/get-dt 1975 1 1 22 0 vienna) :tz london}
+    3
+    [(kairos/get-dt 1975 1 1 22 0 london)
+     (kairos/get-dt 1975 1 1 23 0 london)
+     (kairos/get-dt 1975 1 2 0 0 london)]
+    "start in Vienna, output in London - London is 1h behind"]
+
+   ;; start in London (UTC+0), output in Vienna (UTC+1).
+   ;; London 22:00 = UTC 22:00.
+   ;; Vienna 23:00 = UTC 22:00, equal to start -> excluded (strictly after).
+   ;; Vienna 00:00 Jan 2 = UTC 23:00 > UTC 22:00 -> first result.
+   ["@hourly"
+    {:start (kairos/get-dt 1975 1 1 22 0 london) :tz vienna}
+    3
+    [(kairos/get-dt 1975 1 2 0 0 vienna)
+     (kairos/get-dt 1975 1 2 1 0 vienna)
+     (kairos/get-dt 1975 1 2 2 0 vienna)]
+    "start in London, output in Vienna — Vienna is 1h ahead"]
+
+   ;; New Year's Eve edge case:
+   ;; Vienna Dec 31 23:30 = UTC 22:30.
+   ;; Output tz is London. Year in London = Dec 31 22:30 -> 1975.
+   ;; @yearly = "0 0 1 1 *". London Jan 1 00:00 1975 = UTC 00:00 < UTC 22:30 -> skipped.
+   ;; London Jan 1 00:00 1976 -> included.
+   ["@yearly"
+    {:start (kairos/get-dt 1975 12 31 23 30 vienna) :tz london}
+    2
+    [(kairos/get-dt 1976 1 1 0 0 london)
+     (kairos/get-dt 1977 1 1 0 0 london)]
+    "New Year's Eve edge — start zone is ahead of output zone"]
+   ;; New Year's Eve edge case (reversed):
+   ;; London Dec 31 23:30 = UTC 23:30.
+   ;; Output tz is Vienna (UTC+1). start in Vienna = Jan 1 00:30 -> year 1976.
+   ;; @hourly = "0 * * * *".
+   ;; Vienna 00:00 Jan 1 = UTC 23:00 Dec 31 < UTC 23:30 -> skipped.
+   ;; Vienna 01:00 Jan 1 = UTC 00:00 Jan 1 > UTC 23:30 -> first result.
+   ["@hourly"
+    {:start (kairos/get-dt 1975 12 31 23 30 london) :tz vienna}
+    2
+    [(kairos/get-dt 1976 1 1 1 0 vienna)
+     (kairos/get-dt 1976 1 1 2 0 vienna)]
+    "New Year's Eve edge — output zone is ahead of start zone"]])
 
 (deftest test-cron->dt
   (testing "Test generate a sequence of Date-Time objects:"
-    (doseq [[crontab dt quantity expected description] params-cron->dt]
+    (doseq [[crontab opts quantity expected description] params-cron->dt]
       (testing crontab
-        ;; redef is needed to override checks for future events only, see dt-future?
-        (with-redefs [kairos/get-current-dt (constantly dt)]
-          (let [result (take quantity (kairos/cron->dt crontab))]
-            (is (= expected result) description)))))))
+        (let [result (take quantity (kairos/cron->dt crontab opts))]
+          (is (= expected result) description))))))
 
 (deftest test-cron->dt-empty-years
   (testing "Test the for-loop as if years binding were empty to increase coverage"
