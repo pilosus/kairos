@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file. This change
 
 Nothing here yet.
 
+### Added
+
+- Time specification "nicknames" support, e.g. `@yearly`, `@monthly`,
+  `@daily`, etc. ([32](https://github.com/pilosus/kairos/issues/32))
+
 ## [v0.2.45] - 2025-12-16
 
 ### Added

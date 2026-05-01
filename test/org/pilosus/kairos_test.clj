@@ -298,7 +298,55 @@
      (kairos/get-dt 1970 1 1 0 3)
      (kairos/get-dt 1970 1 1 0 4)
      (kairos/get-dt 1970 1 1 0 5)]
-    "At every minute"]])
+    "At every minute"]
+   ["@yearly"
+    (kairos/get-dt 1970 1 1 0 0)
+    3
+    [(kairos/get-dt 1971 1 1 0 0)
+     (kairos/get-dt 1972 1 1 0 0)
+     (kairos/get-dt 1973 1 1 0 0)]
+    "Every year on January 1st at 00:00"]
+   ["@annually"
+    (kairos/get-dt 1970 1 1 0 0)
+    3
+    [(kairos/get-dt 1971 1 1 0 0)
+     (kairos/get-dt 1972 1 1 0 0)
+     (kairos/get-dt 1973 1 1 0 0)]
+    "Every year on January 1st at 00:00"]
+   ["@monthly"
+    (kairos/get-dt 1970 1 1 23 55)
+    3
+    [(kairos/get-dt 1970 2 1 0 0)
+     (kairos/get-dt 1970 3 1 0 0)
+     (kairos/get-dt 1970 4 1 0 0)]
+    "Every 1st day of the month at 00:00"]
+   ["@weekly"
+    (kairos/get-dt 1970 1 1 23 55)
+    5
+    [(kairos/get-dt 1970 1 4 0 0)
+     (kairos/get-dt 1970 1 11 0 0)
+     (kairos/get-dt 1970 1 18 0 0)
+     (kairos/get-dt 1970 1 25 0 0)
+     (kairos/get-dt 1970 2 1 0 0)]
+    "Every week on Sundays at 00:00"]
+   ["@daily"
+    (kairos/get-dt 1970 1 1 23 55)
+    5
+    [(kairos/get-dt 1970 1 2 0 0)
+     (kairos/get-dt 1970 1 3 0 0)
+     (kairos/get-dt 1970 1 4 0 0)
+     (kairos/get-dt 1970 1 5 0 0)
+     (kairos/get-dt 1970 1 6 0 0)]
+    "Every day at 00:00"]
+   ["@hourly"
+    (kairos/get-dt 1970 1 1 22 0)
+    5
+    [(kairos/get-dt 1970 1 1 23 0)
+     (kairos/get-dt 1970 1 2 0 0)
+     (kairos/get-dt 1970 1 2 1 0)
+     (kairos/get-dt 1970 1 2 2 0)
+     (kairos/get-dt 1970 1 2 3 0)]
+    "Every hour at 00:00"]])
 
 (deftest test-cron->dt
   (testing "Test generate a sequence of Date-Time objects:"
