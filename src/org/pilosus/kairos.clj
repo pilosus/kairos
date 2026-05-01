@@ -436,14 +436,6 @@
              dt))]
      results)))
 
-(comment
-  (take
-   3
-   (cron->dt
-    "@hourly"
-    {:start (get-dt 2026 5 2 0 16 (ZoneId/of "Europe/London"))
-     :tz (ZoneId/of "Europe/Vienna")})))
-
 (defn cron->text
   "Parse crontab string into a human-readable text"
   [s]

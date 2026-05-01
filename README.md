@@ -23,13 +23,19 @@ Crontab parser for Clojure with plain-English cron explanations.
 ;; 1. Generate a sequence of Date Time objects for a given crontab entry
 (kairos/cron->dt "0 10 3,7 Dec Mon")
 
+;; or 2. Same but with a starting Date Time and a timezone for output
+(kairos/cron->dt
+ "0 10 3,7 Dec Mon"
+ {:start (kairos/get-dt 2023 12 1 23 55 (java.time.ZoneId/of "Europe/Vienna"))
+  :tz (java.time.ZoneId/of "UTC")})
+
 ;; (#object[java.time.ZonedDateTime 0x55eb9b05 "2023-12-03T10:00Z[UTC]"]
 ;;  #object[java.time.ZonedDateTime 0x2ed291ba "2023-12-04T10:00Z[UTC]"]
 ;;  ...
 ;;  #object[java.time.ZonedDateTime 0x749adbda "2024-12-30T10:00Z[UTC]"])
 
 
-;; 2. Explain a crontab enrty in plain English
+;; 3. Explain a crontab enrty in plain English
 (kairos/cron->text "0 6,10-18/2,22 * * Mon-Fri")
 
 ;; at minute 0, past hour 6, every 2nd hour from 10 through 18, hour 22, on every day of week from Monday through Friday, in every month
