@@ -63,6 +63,14 @@
    #"jan" "1" #"feb" "2" #"mar" "3" #"apr" "4" #"may" "5" #"jun" "6"
    #"jul" "7" #"aug" "8" #"sep" "9" #"oct" "10" #"nov" "11" #"dec" "12"})
 
+(def cron-nicknames
+  {"@yearly" "0 0 1 1 *"
+   "@annually" "0 0 1 1 *"
+   "@monthly" "0 0 1 * *"
+   "@weekly" "0 0 * * 0"  ;; on Sundays
+   "@daily" "0 0 * * *"
+   "@hourly" "0 * * * *"})
+
 ;; ISO-8601 day-of-week mapping
 (def day-number->name
   {1 "Monday"
@@ -224,7 +232,9 @@
 (defn- names->numbers
   "Replace month and day of week names with respective numeric values"
   [^String s]
-  (replace-names-with-numbers s (seq substitute-values)))
+  (if-let [expanded (cron-nicknames s)]
+    expanded
+    (replace-names-with-numbers s (seq substitute-values))))
 
 (defn- split-cron-string
   "Split cron string to [minute hour day-of-month month day-of-week]"
