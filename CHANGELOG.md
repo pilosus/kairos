@@ -7,6 +7,12 @@ Nothing here yet.
 
 ### Added
 
+- `cron->dt` to support an options map with `:start` and `:tz` keys
+  with a zoned datetime to start the sequence from and a timezone for
+  the output zoned datetimes respectively
+  ([34](https://github.com/pilosus/kairos/issues/34),
+  [35](https://github.com/pilosus/kairos/issues/35))
+
 - Time specification "nicknames" support, e.g. `@yearly`, `@monthly`,
   `@daily`, etc. ([32](https://github.com/pilosus/kairos/issues/32))
 
