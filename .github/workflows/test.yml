@@ -49,3 +49,39 @@ jobs:
         run: clojure -T:build ci :snapshot true :test-disable true
       - name: Check cljdoc
         run: curl -fsSL https://raw.githubusercontent.com/cljdoc/cljdoc/master/script/verify-cljdoc-edn | bash -s doc/cljdoc.edn
+
+  native-image:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'graalce'
+      - name: Setup Clojure
+        uses: DeLaGuardo/setup-clojure@13.5
+        with:
+          cli: '1.12.4.1582'
+      - name: Cache Clojure Deps
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.clojure
+            ~/.cpcache
+            ~/.gitlibs
+            ~/.m2/repository
+          key: ${{ runner.os }}-graal-${{ hashFiles('**/deps.edn') }}
+      - name: Compile and build native image
+        run: |
+          mkdir -p classes
+          clojure -Sdeps '{:paths ["src" "test"]}' -M -e "(compile 'org.pilosus.kairos-graalvm-test)"
+          native-image \
+            --no-fallback \
+            -cp "$(clojure -Sdeps '{:paths ["src" "test"]}' -Spath):classes" \
+            --initialize-at-build-time \
+            -H:Class=org.pilosus.kairos_graalvm_test \
+            -o kairos-graalvm-test
+      - name: Smoke test native image
+        run: ./kairos-graalvm-test

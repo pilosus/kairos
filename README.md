@@ -41,6 +41,23 @@ Crontab parser for Clojure with plain-English cron explanations.
 ;; at minute 0, past hour 6, every 2nd hour from 10 through 18, hour 22, on every day of week from Monday through Friday, in every month
 ```
 
+## GraalVM Native Image
+
+The library is compatible with GraalVM native-image compilation. It
+has zero external dependencies and uses only `java.time` interop with
+no runtime reflection, so that it's safe for ahead-of-time
+compilation.
+
+```
+;; AOT-compile your namespace, then:
+;; native-image --no-fallback \
+;;   --initialize-at-build-time \
+;;   -cp "$(clojure -Spath):classes" \
+;;   -H:Class=your.main.ns \
+;;   -o your-app
+```
+
+
 ## License
 
 See [LICENSE](https://github.com/pilosus/kairos/tree/main/LICENSE).
