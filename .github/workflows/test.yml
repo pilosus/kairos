@@ -59,7 +59,7 @@ jobs:
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: '21'
-          distribution: 'graalce'
+          distribution: 'graalvm-community'
       - name: Setup Clojure
         uses: DeLaGuardo/setup-clojure@13.5
         with:
