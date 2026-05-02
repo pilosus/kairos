@@ -27,7 +27,8 @@
 
   Sunday's day of week number can be either 0 or 7.
 
-  Date-Time entities use java.time.ZonedDateTime for UTC timezone.
+  Date-Time entities are java.time.ZonedDateTime objects in given
+  timezone or UTC by default.
 
 
   Definitions:
@@ -39,6 +40,8 @@
   an asterisk.
 
   named value - a 3-letter name for a month or a day of week.
+
+  nickname value - one of predefined aliases for useful cron entries.
 
   range - two numbers or named values separated by a hyphen.
 
