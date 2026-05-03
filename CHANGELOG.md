@@ -19,6 +19,12 @@ Nothing here yet.
 - Explicit testing for GraalVM native-image compilation
   ([38](https://github.com/pilosus/kairos/issues/38))
 
+- More natural English descriptions for common date and time patterns
+  in `cron->text`, e.g. `0 9 * * 1-5` produces `every weekday at 9:00`
+  rather than `at minute 0, past hour 9, on every day of week from
+  Monday through Friday, in every month`
+  ([40](https://github.com/pilosus/kairos/issues/40))
+
 ## [v0.2.45] - 2025-12-16
 
 ### Added
