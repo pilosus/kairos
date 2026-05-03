@@ -58,6 +58,8 @@
 
 (def list-regex #",\s*")
 
+(def number-with-step-regex #"\*/(\d+)")
+
 (def value-regex
   #"(?s)(?<start>([0-9|*]+))(?:-(?<end>([0-9]+)))?(?:/(?<step>[0-9]+))?")
 
@@ -66,13 +68,21 @@
    #"jan" "1" #"feb" "2" #"mar" "3" #"apr" "4" #"may" "5" #"jun" "6"
    #"jul" "7" #"aug" "8" #"sep" "9" #"oct" "10" #"nov" "11" #"dec" "12"})
 
-(def cron-nicknames
+(def nickname->cron
   {"@yearly" "0 0 1 1 *"
    "@annually" "0 0 1 1 *"
    "@monthly" "0 0 1 * *"
    "@weekly" "0 0 * * 0"  ;; on Sundays
    "@daily" "0 0 * * *"
    "@hourly" "0 * * * *"})
+
+(def nickname->text
+  {"@yearly" "every January 1st at midnight"
+   "@annually" "every January 1st at midnight"
+   "@monthly" "every 1st of the month at midnight"
+   "@weekly" "every Sunday at midnight"
+   "@daily" "every day at midnight"
+   "@hourly" "every hour"})
 
 ;; ISO-8601 day-of-week mapping
 (def day-number->name
@@ -235,7 +245,7 @@
 (defn- names->numbers
   "Replace month and day of week names with respective numeric values"
   [^String s]
-  (if-let [expanded (cron-nicknames s)]
+  (if-let [expanded (nickname->cron s)]
     expanded
     (replace-names-with-numbers s (seq substitute-values))))
 
@@ -378,6 +388,110 @@
          :day-of-week (field->values day-of-week' :day-of-week)}]
     cron))
 
+;; Simplified text
+
+(defn- simple-time->text
+  [minute hour]
+  (cond
+    (and (= minute "0") (= hour "0")) "midnight"
+    (and (= minute "0") (not= hour "0")) (format "%s:00" hour)
+    (and (re-matches #"\d+" minute) (re-matches #"\d+" hour))
+    (format "%s:%02d" hour (Integer/parseInt minute))
+    :else nil))
+
+(defn- simple-day-of-month->text
+  [day-of-month]
+  (value->ordinal day-of-month))
+
+(defn- simple-month->text
+  [month]
+  (value-fragment->text month :month))
+
+(defn- simple-day-of-week->text
+  [day-of-week]
+  (cond
+    (or (= day-of-week "1-5")
+        (= day-of-week "1,2,3,4,5")) "weekday"
+    (or (= day-of-week "6,0")
+        (= day-of-week "6,7")
+        (= day-of-week "6-7")) "weekend"
+    :else nil))
+
+(defn- cron->simple-text
+  [s]
+  (let [nicknamed (nickname->text s)]
+    (if nicknamed
+      nicknamed
+      (try
+        (cron->map-unsafe s)
+        (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
+              time (simple-time->text minute hour)
+              dow (simple-day-of-week->text day-of-week)
+              dom (simple-day-of-month->text day-of-month)
+              mon (simple-month->text month)]
+          (cond
+            ;; */5 * * * *  ->  "every 5 minutes"
+            (and (= hour "*")
+                 (= day-of-month "*")
+                 (= month "*")
+                 (= day-of-week "*")
+                 (re-matches number-with-step-regex minute))
+            (format "every %s minutes"
+                    (second (re-matches number-with-step-regex minute)))
+
+             ;; * * * * *  ->  "every minute"
+            (and (= minute "*")
+                 (= hour "*")
+                 (= day-of-month "*")
+                 (= month "*")
+                 (= day-of-week "*"))
+            "every minute"
+
+            ;; 0 */2 * * *  ->  "every 2 hours"
+            (and (= minute "0")
+                 (= day-of-month "*")
+                 (= month "*")
+                 (= day-of-week "*")
+                 (re-matches number-with-step-regex hour))
+            (format "every %s hours"
+                    (second (re-matches number-with-step-regex hour)))
+
+            ;; fixed time + all days + all months + specific dow
+            ;; 0 9 * * 1-5 -> "every weekday at 9:00"
+            (and time
+                 (= day-of-month "*")
+                 (= month "*")
+                 dow)
+            (format "every %s at %s" dow time)
+
+            ;; fixed time + specific dom + all months + all dow
+            ;; 30 8 15 * *  ->  "every 15th of the month at 8:30"
+            (and time
+                 dom
+                 (= month "*")
+                 (= day-of-week "*"))
+            (format "every %s of the month at %s" dom time)
+
+            ;; fixed time + specific dom + specific month + all dow
+            ;; 0 0 25 12 *  ->  "every December 25th at midnight"
+            (and time
+                 dom
+                 mon
+                 (= day-of-week "*"))
+            (format "every %s %s at %s" mon dom time)
+
+            ;; fixed time + all days + all months + all dow
+            ;; 30 8 * * *  ->  "every day at 8:30"
+            (and time
+                 (= day-of-month "*")
+                 (= month "*")
+                 (= day-of-week "*"))
+            (format "every day at %s" time)
+
+            ;; nothing matched -> nil, fall through to verbose
+            :else nil))
+        (catch Exception _ nil)))))
+
 ;; Entrypoints
 
 (defn cron->map
@@ -442,22 +556,23 @@
 (defn cron->text
   "Parse crontab string into a human-readable text"
   [s]
-  (try
-    (cron->map-unsafe s)
-    (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
-          day-of-month' (field->text day-of-month :day-of-month)
-          day-of-week' (field->text day-of-week :day-of-week)
-          minute' (field->text minute :minute)
-          hour' (field->text hour :hour)
-          day' (cond
-                 (and (= day-of-month "*")
-                      (not (= day-of-week "*"))) (field->text day-of-week :day-of-week)
-                 (and (not (= day-of-month "*"))
-                      (= day-of-week "*")) (field->text day-of-month :day-of-month)
-                 (and (not (= day-of-month "*"))
-                      (not (= day-of-week "*"))) (format "%s or %s" day-of-month' day-of-week')
-                 :else "every day")
-          month' (field->text month :month)
-          text (format "at %s, past %s, on %s, in %s" minute' hour' day' month')]
-      text)
-    (catch Exception _ nil)))
+  (or (cron->simple-text s)
+      (try
+        (cron->map-unsafe s)
+        (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
+              day-of-month' (field->text day-of-month :day-of-month)
+              day-of-week' (field->text day-of-week :day-of-week)
+              minute' (field->text minute :minute)
+              hour' (field->text hour :hour)
+              day' (cond
+                     (and (= day-of-month "*")
+                          (not (= day-of-week "*"))) (field->text day-of-week :day-of-week)
+                     (and (not (= day-of-month "*"))
+                          (= day-of-week "*")) (field->text day-of-month :day-of-month)
+                     (and (not (= day-of-month "*"))
+                          (not (= day-of-week "*"))) (format "%s or %s" day-of-month' day-of-week')
+                     :else "every day")
+              month' (field->text month :month)
+              text (format "at %s, past %s, on %s, in %s" minute' hour' day' month')]
+          text)
+        (catch Exception _ nil))))

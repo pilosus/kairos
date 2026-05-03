@@ -8,7 +8,7 @@ Crontab parser for Clojure with plain-English cron explanations.
 - Supports [vixie-cron](https://man7.org/linux/man-pages/man5/crontab.5.html) syntax, inlcuding special aliases
 - Parses a `crontab` entry into a lazy sequence of `java.time.ZonedDateTime` objects in given timezone or `UTC` by default
 - Explains a `crontab` entry in plain English
-- GraalVM ready
+- GraalVM-ready
 
 *Kairos* (καιρός) means the right, critical, or opportune moment.
 
@@ -19,15 +19,15 @@ Crontab parser for Clojure with plain-English cron explanations.
 ## Usage
 
 ```clojure
-(require '[org.pilosus.kairos :as kairos])
+(require '[org.pilosus.kairos :as k])
 
 ;; 1. Generate a sequence of Date Time objects for a given crontab entry
-(kairos/cron->dt "0 10 3,7 Dec Mon")
+(k/cron->dt "0 10 3,7 Dec Mon")
 
-;; or 2. Same but with a starting Date Time and a timezone for output
-(kairos/cron->dt
+;; 2. Same but with a starting Date Time and a timezone for output
+(k/cron->dt
  "0 10 3,7 Dec Mon"
- {:start (kairos/get-dt 2023 12 1 23 55 (java.time.ZoneId/of "Europe/Vienna"))
+ {:start (k/get-dt 2023 12 1 23 55 (java.time.ZoneId/of "Europe/Vienna"))
   :tz (java.time.ZoneId/of "UTC")})
 
 ;; (#object[java.time.ZonedDateTime 0x55eb9b05 "2023-12-03T10:00Z[UTC]"]
@@ -36,8 +36,17 @@ Crontab parser for Clojure with plain-English cron explanations.
 ;;  #object[java.time.ZonedDateTime 0x749adbda "2024-12-30T10:00Z[UTC]"])
 
 
-;; 3. Explain a crontab enrty in plain English
-(kairos/cron->text "0 6,10-18/2,22 * * Mon-Fri")
+;; 3. Explain a crontab entry in plain English
+
+(k/cron->text "0 0 25 12 *")
+
+;; every December 25th at midnight
+
+(k/cron->text "*/5 * * * *")
+
+;; "every 5 minutes"
+
+(k/cron->text "0 6,10-18/2,22 * * Mon-Fri")
 
 ;; at minute 0, past hour 6, every 2nd hour from 10 through 18, hour 22, on every day of week from Monday through Friday, in every month
 ```
