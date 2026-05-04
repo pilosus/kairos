@@ -3,11 +3,11 @@
 [![Clojars Project](https://img.shields.io/clojars/v/org.pilosus/kairos.svg)](https://clojars.org/org.pilosus/kairos)
 [![codecov](https://codecov.io/gh/pilosus/kairos/branch/main/graph/badge.svg?token=8OKTCKNq17)](https://codecov.io/gh/pilosus/kairos)
 
-Crontab parser for Clojure with plain-English cron explanations.
+Crontab parser for Clojure with plain-English cron explanations. Other languages supported via locales.
 
 - Supports [vixie-cron](https://man7.org/linux/man-pages/man5/crontab.5.html) syntax, inlcuding special aliases
 - Parses a `crontab` entry into a lazy sequence of `java.time.ZonedDateTime` objects in given timezone or `UTC` by default
-- Explains a `crontab` entry in plain English
+- Explains a `crontab` entry in plain English or any other language via locales
 - GraalVM-ready
 
 *Kairos* (καιρός) means the right, critical, or opportune moment.
@@ -19,7 +19,8 @@ Crontab parser for Clojure with plain-English cron explanations.
 ## Usage
 
 ```clojure
-(require '[org.pilosus.kairos :as k])
+(require '[org.pilosus.kairos :as k]
+         '[org.pilosus.kairos.locale :as locale])
 
 ;; 1. Generate a sequence of Date Time objects for a given crontab entry
 (k/cron->dt "0 10 3,7 Dec Mon")
@@ -49,6 +50,11 @@ Crontab parser for Clojure with plain-English cron explanations.
 (k/cron->text "0 6,10-18/2,22 * * Mon-Fri")
 
 ;; at minute 0, past hour 6, every 2nd hour from 10 through 18, hour 22, on every day of week from Monday through Friday, in every month
+
+;; 4. Use locales to translate a crontab entry into your language
+(k/cron->text "0 0 * * 1-5" {:locale locale/de})
+
+;; jeden Werktag um Mitternacht
 ```
 
 ## GraalVM Native Image
