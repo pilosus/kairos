@@ -492,6 +492,117 @@
         (is (= expected (kairos/cron->text cron {:locale locale/es}))
             description)))))
 
+(def params-cron->text-fr-simple
+  [["@yearly"
+    "chaque 1er janvier à minuit"
+    "Nickname @yearly"]
+   ["@annually"
+    "chaque 1er janvier à minuit"
+    "Nickname @annually"]
+   ["@monthly"
+    "le 1er de chaque mois à minuit"
+    "Nickname @monthly"]
+   ["@weekly"
+    "chaque dimanche à minuit"
+    "Nickname @weekly"]
+   ["@daily"
+    "chaque jour à minuit"
+    "Nickname @daily"]
+   ["@hourly"
+    "chaque heure"
+    "Nickname @hourly"]
+   ["* * * * *"
+    "chaque minute"
+    "Every minute"]
+   ["*/5 * * * *"
+    "toutes les 5 minutes"
+    "Every 5 minutes"]
+   ["*/25 * * * *"
+    "toutes les 25 minutes"
+    "Double-digit minutes with step"]
+   ["0 */2 * * *"
+    "toutes les 2 heures"
+    "Every 2 hours"]
+   ["0 */12 * * *"
+    "toutes les 12 heures"
+    "Double-digit hours with step"]
+   ["0 9 * * *"
+    "chaque jour à 9h00"
+    "Every day at 9:00"]
+   ["30 8 * * *"
+    "chaque jour à 8h30"
+    "Every day at 8:30"]
+   ["0 0 * * *"
+    "chaque jour à minuit"
+    "Every day at midnight"]
+   ["0 9 * * 1-5"
+    "chaque jour ouvrable à 9h00"
+    "Every weekday at 9:00"]
+   ["0 9 * * 6,7"
+    "chaque week-end à 9h00"
+    "Every weekend at 9:00"]
+   ["0 9 * * 6,0"
+    "chaque week-end à 9h00"
+    "Every weekend at 9:00 (sun=0)"]
+   ["30 8 15 * *"
+    "le 15 de chaque mois à 8h30"
+    "Every 15th of month at 8:30"]
+   ["0 0 1 * *"
+    "le 1er de chaque mois à minuit"
+    "Every 1st of the month at midnight"]
+   ["0 0 25 12 *"
+    "chaque 25 décembre à minuit"
+    "Every December 25th at midnight"]
+   ["0 0 1 1 *"
+    "chaque 1er janvier à minuit"
+    "Every January 1st at midnight"]
+   ["0 0 14 2 *"
+    "chaque 14 février à minuit"
+    "Every February 14th at midnight"]
+   ["0 12 3 10 *"
+    "chaque 3 octobre à 12h00"
+    "Every October 3rd at noon"]])
+
+(deftest test-cron->text-fr-simple
+  (testing "Test French locale simple patterns"
+    (doseq [[cron expected description] params-cron->text-fr-simple]
+      (testing cron
+        (is (= expected (kairos/cron->text cron {:locale locale/fr}))
+            description)))))
+
+(def params-cron->text-fr-complex
+  [["3-17 * * * *"
+    "chaque minute de 3 à 17, chaque heure, chaque jour, chaque mois"
+    "Simple range value"]
+   ["10-20/2 * * * *"
+    "toutes les 2 minutes de 10 à 20, chaque heure, chaque jour, chaque mois"
+    "Explicit range with step"]
+   ["1,2,17 * * * *"
+    "minute 1, minute 2, minute 17, chaque heure, chaque jour, chaque mois"
+    "Simple list of values"]
+   ["* * 1-15 * *"
+    "chaque minute, chaque heure, chaque jour du mois de 1 à 15, chaque mois"
+    "Day of month only"]
+   ["* * * * 1-4"
+    "chaque minute, chaque heure, chaque jour de la semaine de lundi à jeudi, chaque mois"
+    "Day of week only"]
+   ["* * 1-15 * 1-4"
+    "chaque minute, chaque heure, chaque jour du mois de 1 à 15 ou chaque jour de la semaine de lundi à jeudi, chaque mois"
+    "Day of month OR day of week"]
+   ["* * * Jan-May *"
+    "chaque minute, chaque heure, chaque jour, chaque mois de janvier à mai"
+    "Month range"]
+   ["cannot be parsed"
+    nil
+    "Wrong value"]])
+
+(deftest test-cron->text-fr-complex
+  (testing "Test French locale verbose patterns"
+    (doseq [[cron expected description] params-cron->text-fr-complex]
+      (testing cron
+        (is (= expected (kairos/cron->text cron {:locale locale/fr}))
+            description)))))
+
 (deftest test-cron->text-partial-locale
   (testing "Partial locale overrides merge with English defaults"
     (is (= "every day at minuit"
