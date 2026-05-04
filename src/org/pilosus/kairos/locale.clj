@@ -209,6 +209,82 @@
                                (format "chaque %s %s à %s" dom month-name time)))
    :fmt/every-day-at       "chaque jour à %s"})
 
+(def pt
+  {:day-names          {1 "segunda-feira" 2 "terça-feira" 3 "quarta-feira" 4 "quinta-feira"
+                        5 "sexta-feira" 6 "sábado" 7 "domingo"}
+   :month-names        {1 "janeiro" 2 "fevereiro" 3 "março" 4 "abril"
+                        5 "maio" 6 "junho" 7 "julho" 8 "agosto"
+                        9 "setembro" 10 "outubro" 11 "novembro" 12 "dezembro"}
+   :field-names        {:minute "minuto" :hour "hora"
+                        :day-of-month "dia do mês" :month "mês"
+                        :day-of-week "dia da semana"}
+   :field-fmts
+   {:minute       {:fmt/every-unit  "a cada minuto"
+                   :fmt/every-nth   "a cada %s minutos"
+                   :fmt/unit-value  "minuto %s"
+                   :fmt/range       "a cada minuto de %s a %s"
+                   :fmt/range-step  "a cada %s minutos de %s a %s"}
+    :hour         {:fmt/every-unit  "a cada hora"
+                   :fmt/every-nth   "a cada %s horas"
+                   :fmt/unit-value  "hora %s"
+                   :fmt/range       "a cada hora de %s a %s"
+                   :fmt/range-step  "a cada %s horas de %s a %s"}
+    :day-of-month {:fmt/every-unit  "cada dia do mês"
+                   :fmt/every-nth   "cada %s dias do mês"
+                   :fmt/unit-value  "dia do mês %s"
+                   :fmt/range       "cada dia do mês de %s a %s"
+                   :fmt/range-step  "cada %s dias do mês de %s a %s"}
+    :month        {:fmt/every-unit  "cada mês"
+                   :fmt/every-nth   "cada %s meses"
+                   :fmt/unit-value  "mês %s"
+                   :fmt/range       "cada mês de %s a %s"
+                   :fmt/range-step  "cada %s meses de %s a %s"}
+    :day-of-week  {:fmt/every-unit  "cada dia da semana"
+                   :fmt/every-nth   "cada %s dias da semana"
+                   :fmt/unit-value  "dia da semana %s"
+                   :fmt/range       "cada dia da semana de %s a %s"
+                   :fmt/range-step  "cada %s dias da semana de %s a %s"}}
+   :nicknames          {"@yearly"   "todo dia 1 de janeiro à meia-noite"
+                        "@annually" "todo dia 1 de janeiro à meia-noite"
+                        "@monthly"  "todo dia 1 de cada mês à meia-noite"
+                        "@weekly"   "todo domingo à meia-noite"
+                        "@daily"    "todo dia à meia-noite"
+                        "@hourly"   "a cada hora"}
+   :ordinal-fn         (fn [n] (str n))
+   :time-fn            (fn [h m]
+                         (cond
+                           (and (= h "0") (= m "0")) "à meia-noite"
+                           (and (re-matches #"\d+" m) (re-matches #"\d+" h))
+                           (let [mi (Integer/parseInt m)]
+                             (if (zero? mi)
+                               (format "às %s:00" h)
+                               (format "às %s:%02d" h mi)))
+                           :else nil))
+   :midnight           "à meia-noite"
+   :every-day          "cada dia"
+   :every-minute       "a cada minuto"
+   :weekday            "dia útil"
+   :weekend            "fim de semana"
+   :fmt/verbose        "%s, %s, %s, %s"
+   :fmt/or             "%s ou %s"
+   :fmt/every-unit     "cada %s"
+   :fmt/every-nth      "cada %s %s"
+   :fmt/unit-value     "%s %s"
+   :fmt/range          "cada %s de %s a %s"
+   :fmt/range-step     "cada %s %s de %s a %s"
+   :fmt/every-n-minutes    "a cada %s minutos"
+   :fmt/every-n-hours      "a cada %s horas"
+   :fmt/every-dow-at       "todo %s %s"
+   :fmt/every-dom-at       "todo dia %s de cada mês %s"
+   :fmt/every-month-dom-at (fn [{:keys [day-of-month month time]}]
+                             (let [month-names {1 "janeiro" 2 "fevereiro" 3 "março" 4 "abril"
+                                                5 "maio" 6 "junho" 7 "julho" 8 "agosto"
+                                                9 "setembro" 10 "outubro" 11 "novembro" 12 "dezembro"}
+                                   month-name (get month-names (Integer/parseInt month))]
+                               (format "todo dia %s de %s %s"
+                                       day-of-month month-name time)))
+   :fmt/every-day-at       "todo dia %s"})
+
 (defn- ru-plural
   "Russian plural form for a numeric string.
    Returns one of three forms based on standard Russian grammar rules:
