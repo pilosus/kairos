@@ -258,25 +258,144 @@
       names->numbers
       (string/split #"\s+")))
 
+;; Locales
+
+(defn- ordinal-en
+  "English ordinal: 1 -> 1st, 2 -> 2nd, 3 -> 3rd, 11 -> 11th, etc."
+  [n]
+  (let [last-one (mod n 10)
+        last-two (mod n 100)
+        suffix (cond
+                 (contains? #{11 12 13} last-two) "th"
+                 (= last-one 1) "st"
+                 (= last-one 2) "nd"
+                 (= last-one 3) "rd"
+                 :else "th")]
+    (format "%s%s" n suffix)))
+
+(def locale-en
+  {:day-names          day-number->name
+   :month-names        month-number->name
+   :field-names        field->name
+   :nicknames          nickname->text
+   :ordinal-fn         ordinal-en
+   :time-fn            nil
+   :midnight           "midnight"
+   :every-day          "every day"
+   :every-minute       "every minute"
+   :weekday            "weekday"
+   :weekend            "weekend"
+   :fmt/verbose        "at %s, past %s, on %s, in %s"
+   :fmt/or             "%s or %s"
+   :fmt/every-unit     "every %s"
+   :fmt/every-nth      "every %s %s"
+   :fmt/unit-value     "%s %s"
+   :fmt/range          "every %s from %s through %s"
+   :fmt/range-step     "every %s %s from %s through %s"
+   :fmt/every-n-minutes    "every %s minutes"
+   :fmt/every-n-hours      "every %s hours"
+   :fmt/every-dow-at       "every %s at %s"
+   :fmt/every-dom-at       "every %s of the month at %s"
+   :fmt/every-month-dom-at "every %s %s at %s"
+   :fmt/every-day-at       "every day at %s"})
+
+(defn- resolve-locale [locale]
+  (merge locale-en (or locale {})))
+
 ;; Parsing cron into human-readable text
+
+(defn- value-fragment->text*
+  "Parse a fragment of the value into human-readable text using locale.
+   case-form can be :nominative (default) or :genitive for range start values."
+  ([s field locale] (value-fragment->text* s field locale :nominative))
+  ([s field locale case-form]
+   (case field
+     :month
+     (when-let [number (try (Integer/parseInt s) (catch Exception _ nil))]
+       (let [names (if (and (= case-form :genitive) (:month-names-genitive locale))
+                     (:month-names-genitive locale)
+                     (:month-names locale))]
+         (get names number)))
+     :day-of-week
+     (when-let [number (try (Integer/parseInt s) (catch Exception _ nil))]
+       (let [names (if (and (= case-form :genitive) (:day-names-genitive locale))
+                     (:day-names-genitive locale)
+                     (:day-names locale))]
+         (get names (zero->seven number))))
+     s)))
 
 (defmulti value-fragment->text
   "Parse a frament of the value into a human readable text"
   (fn [_ field] field))
 
 (defmethod value-fragment->text :month [s _]
-  (when-let [number (try (Integer/parseInt s) (catch Exception _ nil))]
-    (->> number
-         (get month-number->name))))
+  (value-fragment->text* s :month locale-en))
 
 (defmethod value-fragment->text :day-of-week [s _]
-  (when-let [number (try (Integer/parseInt s) (catch Exception _ nil))]
-    (->> number
-         zero->seven
-         (get day-number->name))))
+  (value-fragment->text* s :day-of-week locale-en))
 
 (defmethod value-fragment->text :default [s _]
-  s)
+  (value-fragment->text* s :default locale-en))
+
+(defn- value->text*
+  "Parse a string with the values into human-readable text using locale"
+  [s field locale]
+  (let [matcher (re-matcher value-regex s)]
+    (if (.matches matcher)
+      (let [field-fmts (get-in locale [:field-fmts field])
+            unit (get (:field-names locale) field)
+            article (get-in locale [:field-articles field])
+            qual-unit (if article (str article " " unit) unit)
+            start (.group matcher "start")
+            step (.group matcher "step")
+            end (.group matcher "end")
+            parsed-start (value-fragment->text* start field locale)
+            parsed-start-gen (value-fragment->text* start field locale :genitive)
+            ordinal-fn (or (get-in locale [:field-ordinals field])
+                           (:ordinal-fn locale))
+            parsed-step (when step (ordinal-fn (Integer/parseInt step)))
+            parsed-end (value-fragment->text* end field locale)]
+        (cond
+          (and
+           (= start "*")
+           (nil? step)) (if field-fmts
+                          (:fmt/every-unit field-fmts)
+                          (format (:fmt/every-unit locale) qual-unit))
+          (and
+           (= start "*")
+           (some? step)) (if field-fmts
+                           (format (:fmt/every-nth field-fmts) parsed-step)
+                           (if article
+                             (format (:fmt/every-nth locale)
+                                     (str article " " parsed-step " " unit))
+                             (format (:fmt/every-nth locale) parsed-step unit)))
+          (and
+           (some? start)
+           (nil? end)) (if field-fmts
+                         (format (:fmt/unit-value field-fmts) parsed-start)
+                         (format (:fmt/unit-value locale) unit parsed-start))
+          (and
+           (some? start)
+           (some? end)
+           (nil? step)) (if field-fmts
+                          (format (:fmt/range field-fmts)
+                                  parsed-start-gen parsed-end)
+                          (format (:fmt/range locale)
+                                  qual-unit parsed-start parsed-end))
+          (and
+           (some? start)
+           (some? end)
+           (some? step)) (if field-fmts
+                           (format (:fmt/range-step field-fmts)
+                                   parsed-step parsed-start-gen parsed-end)
+                           (if article
+                             (format (:fmt/range-step locale)
+                                     (str article " " parsed-step " " unit)
+                                     parsed-start parsed-end)
+                             (format (:fmt/range-step locale)
+                                     parsed-step unit parsed-start parsed-end)))
+          :else nil))
+      nil)))
 
 (defmulti value->text
   "Parse a string with the values into a human-readable text"
@@ -284,47 +403,19 @@
 
 (defmethod value->text :default
   [s field]
-  (let [matcher (re-matcher value-regex s)]
-    (if (.matches matcher)
-      (let [unit (get field->name field)
-            start (.group matcher "start")
-            step (.group matcher "step")
-            end (.group matcher "end")
-            parsed-start (value-fragment->text start field)
-            parsed-step (value->ordinal step)
-            parsed-end (value-fragment->text end field)]
-        ;; start is guaranteed to be non-empty by the regex,
-        ;; yet we keep it in the cond for readability
-        (cond
-          (and
-           (= start "*")
-           (nil? step)) (format "every %s" unit)
-          (and
-           (= start "*")
-           (some? step)) (format "every %s %s" parsed-step unit)
-          (and
-           (some? start)
-           (nil? end)) (format "%s %s" unit parsed-start)
-          (and
-           (some? start)
-           (some? end)
-           (nil? step)) (format "every %s from %s through %s"
-                                unit parsed-start parsed-end)
-          (and
-           (some? start)
-           (some? end)
-           (some? step)) (format "every %s %s from %s through %s"
-                                 parsed-step unit parsed-start parsed-end)
-          :else nil))
-      nil)))
+  (value->text* s field locale-en))
+
+(defn- field->text*
+  "Parse field values into human-readable text using locale"
+  [s field locale]
+  (let [lists (string/split s list-regex)
+        parsed-values (map #(value->text* % field locale) lists)]
+    (string/join ", " parsed-values)))
 
 (defn field->text
   "Parse field values into a human readable text"
   [s field]
-  (let [lists (string/split s list-regex)
-        parsed-values (map #(value->text % field) lists)
-        result (string/join ", " parsed-values)]
-    result))
+  (field->text* s field locale-en))
 
 ;; Date-Time sequence generation
 
@@ -391,44 +482,47 @@
 ;; Simplified text
 
 (defn- simple-time->text
-  [minute hour]
-  (cond
-    (and (= minute "0") (= hour "0")) "midnight"
-    (and (= minute "0") (not= hour "0")) (format "%s:00" hour)
-    (and (re-matches #"\d+" minute) (re-matches #"\d+" hour))
-    (format "%s:%02d" hour (Integer/parseInt minute))
-    :else nil))
+  [minute hour locale]
+  (if-let [time-fn (:time-fn locale)]
+    (time-fn hour minute)
+    (cond
+      (and (= minute "0") (= hour "0")) (:midnight locale)
+      (and (= minute "0") (not= hour "0")) (format "%s:00" hour)
+      (and (re-matches #"\d+" minute) (re-matches #"\d+" hour))
+      (format "%s:%02d" hour (Integer/parseInt minute))
+      :else nil)))
 
 (defn- simple-day-of-month->text
-  [day-of-month]
-  (value->ordinal day-of-month))
+  [day-of-month locale]
+  (when-let [number (try (Integer/parseInt day-of-month) (catch Exception _ nil))]
+    ((:ordinal-fn locale) number)))
 
 (defn- simple-month->text
-  [month]
-  (value-fragment->text month :month))
+  [month locale]
+  (value-fragment->text* month :month locale))
 
 (defn- simple-day-of-week->text
-  [day-of-week]
+  [day-of-week locale]
   (cond
     (or (= day-of-week "1-5")
-        (= day-of-week "1,2,3,4,5")) "weekday"
+        (= day-of-week "1,2,3,4,5")) (:weekday locale)
     (or (= day-of-week "6,0")
         (= day-of-week "6,7")
-        (= day-of-week "6-7")) "weekend"
+        (= day-of-week "6-7")) (:weekend locale)
     :else nil))
 
 (defn- cron->simple-text
-  [s]
-  (let [nicknamed (nickname->text s)]
+  [s locale]
+  (let [nicknamed (get (:nicknames locale) (-> s string/trim string/lower-case))]
     (if nicknamed
       nicknamed
       (try
         (cron->map-unsafe s)
         (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
-              time (simple-time->text minute hour)
-              dow (simple-day-of-week->text day-of-week)
-              dom (simple-day-of-month->text day-of-month)
-              mon (simple-month->text month)]
+              time (simple-time->text minute hour locale)
+              dow (simple-day-of-week->text day-of-week locale)
+              dom (simple-day-of-month->text day-of-month locale)
+              mon (simple-month->text month locale)]
           (cond
             ;; */5 * * * *  ->  "every 5 minutes"
             (and (= hour "*")
@@ -436,8 +530,9 @@
                  (= month "*")
                  (= day-of-week "*")
                  (re-matches number-with-step-regex minute))
-            (format "every %s minutes"
-                    (second (re-matches number-with-step-regex minute)))
+            (let [v (second (re-matches number-with-step-regex minute))
+                  fmt (:fmt/every-n-minutes locale)]
+              (if (fn? fmt) (fmt v) (format fmt v)))
 
              ;; * * * * *  ->  "every minute"
             (and (= minute "*")
@@ -445,7 +540,7 @@
                  (= day-of-month "*")
                  (= month "*")
                  (= day-of-week "*"))
-            "every minute"
+            (:every-minute locale)
 
             ;; 0 */2 * * *  ->  "every 2 hours"
             (and (= minute "0")
@@ -453,8 +548,9 @@
                  (= month "*")
                  (= day-of-week "*")
                  (re-matches number-with-step-regex hour))
-            (format "every %s hours"
-                    (second (re-matches number-with-step-regex hour)))
+            (let [v (second (re-matches number-with-step-regex hour))
+                  fmt (:fmt/every-n-hours locale)]
+              (if (fn? fmt) (fmt v) (format fmt v)))
 
             ;; fixed time + all days + all months + specific dow
             ;; 0 9 * * 1-5 -> "every weekday at 9:00"
@@ -462,7 +558,7 @@
                  (= day-of-month "*")
                  (= month "*")
                  dow)
-            (format "every %s at %s" dow time)
+            (format (:fmt/every-dow-at locale) dow time)
 
             ;; fixed time + specific dom + all months + all dow
             ;; 30 8 15 * *  ->  "every 15th of the month at 8:30"
@@ -470,7 +566,7 @@
                  dom
                  (= month "*")
                  (= day-of-week "*"))
-            (format "every %s of the month at %s" dom time)
+            (format (:fmt/every-dom-at locale) dom time)
 
             ;; fixed time + specific dom + specific month + all dow
             ;; 0 0 25 12 *  ->  "every December 25th at midnight"
@@ -478,7 +574,10 @@
                  dom
                  mon
                  (= day-of-week "*"))
-            (format "every %s %s at %s" mon dom time)
+            (let [fmt (:fmt/every-month-dom-at locale)]
+              (if (fn? fmt)
+                (fmt {:day-of-month day-of-month :month month :time time :locale locale})
+                (format fmt mon dom time)))
 
             ;; fixed time + all days + all months + all dow
             ;; 30 8 * * *  ->  "every day at 8:30"
@@ -486,7 +585,7 @@
                  (= day-of-month "*")
                  (= month "*")
                  (= day-of-week "*"))
-            (format "every day at %s" time)
+            (format (:fmt/every-day-at locale) time)
 
             ;; nothing matched -> nil, fall through to verbose
             :else nil))
@@ -554,25 +653,35 @@
      results)))
 
 (defn cron->text
-  "Parse crontab string into a human-readable text"
-  [s]
-  (or (cron->simple-text s)
-      (try
-        (cron->map-unsafe s)
-        (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
-              day-of-month' (field->text day-of-month :day-of-month)
-              day-of-week' (field->text day-of-week :day-of-week)
-              minute' (field->text minute :minute)
-              hour' (field->text hour :hour)
-              day' (cond
-                     (and (= day-of-month "*")
-                          (not (= day-of-week "*"))) (field->text day-of-week :day-of-week)
-                     (and (not (= day-of-month "*"))
-                          (= day-of-week "*")) (field->text day-of-month :day-of-month)
-                     (and (not (= day-of-month "*"))
-                          (not (= day-of-week "*"))) (format "%s or %s" day-of-month' day-of-week')
-                     :else "every day")
-              month' (field->text month :month)
-              text (format "at %s, past %s, on %s, in %s" minute' hour' day' month')]
-          text)
-        (catch Exception _ nil))))
+  "Parse crontab string into a human-readable text.
+   opts:
+     :locale - a locale map for translations (default: English).
+               Partial maps are merged with the English defaults.
+               See locale-en for the full schema."
+  ([s] (cron->text s {}))
+  ([s {:keys [locale]}]
+   (let [resolved (resolve-locale locale)]
+     (or (cron->simple-text s resolved)
+         (try
+           (cron->map-unsafe s)
+           (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
+                 day-of-month' (field->text* day-of-month :day-of-month resolved)
+                 day-of-week' (field->text* day-of-week :day-of-week resolved)
+                 minute' (field->text* minute :minute resolved)
+                 hour' (field->text* hour :hour resolved)
+                 day' (cond
+                        (and (= day-of-month "*")
+                             (not (= day-of-week "*"))) (field->text* day-of-week :day-of-week resolved)
+                        (and (not (= day-of-month "*"))
+                             (= day-of-week "*")) (field->text* day-of-month :day-of-month resolved)
+                        (and (not (= day-of-month "*"))
+                             (not (= day-of-week "*"))) (format (:fmt/or resolved) day-of-month' day-of-week')
+                        :else (:every-day resolved))
+                 month' (field->text* month :month resolved)
+                 text (if-let [verbose-fn (:fmt/verbose-fn resolved)]
+                        (verbose-fn {:minute minute' :hour hour'
+                                     :day day' :month month'
+                                     :minute-raw minute})
+                        (format (:fmt/verbose resolved) minute' hour' day' month'))]
+             text)
+           (catch Exception _ nil))))))

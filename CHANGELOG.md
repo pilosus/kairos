@@ -25,6 +25,10 @@ Nothing here yet.
   Monday through Friday, in every month`
   ([40](https://github.com/pilosus/kairos/issues/40))
 
+- Support locales for `cron->text`. Predefined locales: English
+  (default), German, Russian
+  ([42](https://github.com/pilosus/kairos/issues/42))
+
 ## [v0.2.45] - 2025-12-16
 
 ### Added
