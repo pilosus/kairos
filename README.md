@@ -7,7 +7,7 @@ Crontab parser for Clojure with plain-English cron explanations. Other languages
 
 - Supports [vixie-cron](https://man7.org/linux/man-pages/man5/crontab.5.html) syntax, inlcuding special aliases
 - Parses a `crontab` entry into a lazy sequence of `java.time.ZonedDateTime` objects in given timezone or `UTC` by default
-- Explains a `crontab` entry in plain English or any other language via locales
+- Explains a `crontab` entry in plain English or any other language via locales (predefined locales: English, German, Russian, Spanish, Portuguese)
 - GraalVM-ready
 
 *Kairos* (καιρός) means the right, critical, or opportune moment.
