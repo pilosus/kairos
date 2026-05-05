@@ -23,9 +23,9 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
       - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@13.5
+        uses: DeLaGuardo/setup-clojure@13.6.0
         with:
-          cli: '1.12.4.1582'
+          cli: '1.12.4.1629'
       - name: Cache Clojure Deps
         uses: actions/cache@v5
         with:
@@ -61,9 +61,9 @@ jobs:
           java-version: '21'
           distribution: 'graalvm-community'
       - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@13.5
+        uses: DeLaGuardo/setup-clojure@13.6.0
         with:
-          cli: '1.12.4.1582'
+          cli: '1.12.4.1629'
       - name: Cache Clojure Deps
         uses: actions/cache@v5
         with:
