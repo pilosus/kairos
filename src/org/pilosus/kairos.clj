@@ -410,7 +410,9 @@
   [s field locale]
   (let [lists (string/split s list-regex)
         parsed-values (map #(value->text* % field locale) lists)]
-    (string/join ", " parsed-values)))
+    (if-let [list-fn (get-in locale [:field-fmts field :fmt/list-fn])]
+      (list-fn parsed-values)
+      (string/join ", " parsed-values))))
 
 (defn field->text
   "Parse field values into a human readable text"
@@ -675,13 +677,21 @@
                         (and (not (= day-of-month "*"))
                              (= day-of-week "*")) (field->text* day-of-month :day-of-month resolved)
                         (and (not (= day-of-month "*"))
-                             (not (= day-of-week "*"))) (format (:fmt/or resolved) day-of-month' day-of-week')
+                             (not (= day-of-week "*"))) (if-let [or-fn (:fmt/or-fn resolved)]
+                                                          (or-fn day-of-month day-of-week resolved)
+                                                          (format (:fmt/or resolved) day-of-month' day-of-week'))
                         :else (:every-day resolved))
                  month' (field->text* month :month resolved)
                  text (if-let [verbose-fn (:fmt/verbose-fn resolved)]
                         (verbose-fn {:minute minute' :hour hour'
                                      :day day' :month month'
-                                     :minute-raw minute})
+                                     :day-of-month-text day-of-month'
+                                     :day-of-week-text day-of-week'
+                                     :minute-raw minute
+                                     :hour-raw hour
+                                     :day-of-month-raw day-of-month
+                                     :day-of-week-raw day-of-week
+                                     :month-raw month})
                         (format (:fmt/verbose resolved) minute' hour' day' month'))]
              text)
            (catch Exception _ nil))))))
