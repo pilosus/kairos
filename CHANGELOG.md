@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file. This change
 
 Nothing here yet.
 
+## [v0.2.66] - 2026-05-10
+
 ### Added
 
 - `crons->overlaps` to return pairs of overlapping cron entries
@@ -129,7 +131,8 @@ Nothing here yet.
   conditions. Objects get generated as a lazy sequence.
 - Project CI/CD workflows
 
-[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.62...HEAD
+[Unreleased]: https://github.com/pilosus/kairos/compare/v0.2.66...HEAD
+[v0.2.66]: https://github.com/pilosus/kairos/compare/v0.2.62...v0.2.66
 [v0.2.62]: https://github.com/pilosus/kairos/compare/v0.2.45...v0.2.62
 [v0.2.45]: https://github.com/pilosus/kairos/compare/v0.2.26...v0.2.45
 [v0.2.26]: https://github.com/pilosus/kairos/compare/v0.2.22...v0.2.26
