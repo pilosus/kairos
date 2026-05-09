@@ -19,6 +19,14 @@
   Format follows that of the Vixie cron:
   https://man7.org/linux/man-pages/man5/crontab.5.html
 
+   ┌────────────── minute (0-59)
+   │ ┌──────────── hour (0-23)
+   │ │ ┌────────── day of month (1-31)
+   │ │ │ ┌──────── month (1-12 or Jan-Dec)
+   │ │ │ │ ┌────── day of week (0-7 or Mon-Sun, 0 and 7 are Sunday)
+   │ │ │ │ │
+   * * * * *
+
   including support for the following Date-Time matching:
   (month AND hour AND minute AND (day-of-month OR day-of-week))
 
@@ -32,6 +40,11 @@
 
 
   Definitions:
+
+  cron entry, cron expression, or cron - a string with a schedule
+  expression that contains fields or a nickname value. NB! In the
+  context of `kairos` a cron entry does not contain a command (like
+  original crontab file's lines do), but only a schedule expression.
 
   field - time and date fragments of the cron entry.
 
@@ -49,10 +62,15 @@
 
   list of values - values separated by comma."
   (:gen-class)
-  (:require [clojure.string :as string])
-  (:import (java.time ZonedDateTime ZoneId)))
+  (:require [clojure.string :as string]
+            [clojure.set])
+  (:import (java.time ZonedDateTime ZoneId Period Duration)))
 
-;; Crontab parsing
+;; Forward declarations
+
+(declare cron->map cron->dt cron->text)
+
+;; Cron entries parsing
 
 (def skip-field "")
 
@@ -421,22 +439,34 @@
 
 ;; Date-Time sequence generation
 
-(def utc-tz (ZoneId/of "UTC"))
+(def ^:deprecated utc-tz
+  "Deprecated: use ``tz-utc`` instead"
+  (ZoneId/of "UTC"))
+
+(def tz-utc (ZoneId/of "UTC"))
+
+(def delta-4y (Period/ofYears 4))
+(def delta-1y (Period/ofYears 1))
+(def delta-30d (Period/ofDays 30))
 
 (defn get-current-dt
   "Get current date time"
-  (^java.time.ZonedDateTime [] (get-current-dt utc-tz))
+  (^java.time.ZonedDateTime [] (get-current-dt tz-utc))
   (^java.time.ZonedDateTime [^java.time.ZoneId tz]
    (ZonedDateTime/now ^java.time.ZoneId tz)))
 
 (defn get-dt
   "Return ZonedDateTime in given time zone/UTC or nil for invalid Date-Time"
-  ([year month day hour minute] (get-dt year month day hour minute utc-tz))
+  ([year month day hour minute] (get-dt year month day hour minute tz-utc))
   ([year month day hour minute tz]
    (let [second 0
          nanosecond 0]
      (try (ZonedDateTime/of year month day hour minute second nanosecond tz)
           (catch java.time.DateTimeException _ nil)))))
+
+(defn dt-plus-period
+  [^java.time.ZonedDateTime dt ^java.time.Period p]
+  (.plus dt p))
 
 (defn- range-days
   "Get a seq of days of month"
@@ -459,13 +489,23 @@
           (seq-contains? days-of-week dt-day-of-week)))
     false))
 
-(defn dt-future?
-  "Return true if provided ZonedDateTime is in the future"
+(defn ^:deprecated dt-future?
+  "Deprecated: use dt-gt? instead"
   [^java.time.ZonedDateTime current-dt ^java.time.ZonedDateTime another-dt]
   (.isAfter another-dt current-dt))
 
+(defn dt-gt?
+  "Return true if dt1 comes after dt2"
+  [^java.time.ZonedDateTime dt1 ^java.time.ZonedDateTime dt2]
+  (.isAfter dt1 dt2))
+
+(defn dt-lt?
+  "Return true if dt1 comes before dt2"
+  [^java.time.ZonedDateTime dt1 ^java.time.ZonedDateTime dt2]
+  (.isBefore dt1 dt2))
+
 (defn- cron->map-unsafe
-  "Parse a crontab string into a map of ranges, throw an exception if
+  "Parse a cron entry into a map of ranges, throw an exception if
   parsing fails"
   [s]
   (let [[minute hour day-of-month month day-of-week] (split-cron-string s)
@@ -480,6 +520,51 @@
          :month (field->values month :month)
          :day-of-week (field->values day-of-week' :day-of-week)}]
     cron))
+
+;; Overlaps detection
+
+(defn- fields-overlap?
+  "Return true if minute, hour, and month fields of two cron entries overlap.
+  Used as an early return (pre-check), because if the fields do not overlap,
+  there's no chance two cron entries overlap, as day-of-month/day-of-week
+  cannot make any difference in this case."
+  [s1 s2]
+  (let [p1 (cron->map s1)
+        p2 (cron->map s2)
+        is (for [f [:minute :hour :month]]
+             (clojure.set/intersection
+              (set (f p1))
+              (set (f p2))))]
+    (every? seq is)))
+
+(defn- bounded-dt-scans-overlap?
+  "Return true if two cron entries overlap, otherwise false.
+  NB! Function implements full lazy seq realization for both cron entries
+  bounded by 1 year ahead by default. It can be a costly operation.
+  Use only when calendar-based events must be compared!
+
+  opts:
+    :start - ZonedDateTime after which to generate times (default: now).
+             Only the instant matters, not its timezone - results after
+             this point in time are included regardless of zone.
+    :tz    - ZoneId for generated datetimes (default: UTC)
+    :end   - ZonedDateTime before which to generate times
+             (default: 1 year ahead of ``start``).
+             If not defined, does not limit resulting lazy seq.
+  "
+  ([s1 s2]
+   (bounded-dt-scans-overlap? s1 s2 {}))
+  ([s1 s2 {:keys [start tz end]}]
+   (let [tz (or tz tz-utc)
+         start (or start (get-current-dt tz))
+         end (or end (.plus ^java.time.ZonedDateTime start
+                            ^java.time.Period delta-1y))
+         dts1 (set (cron->dt s1 {:start start :tz tz :end end}))
+         dts2 (set (cron->dt s2 {:start start :tz tz :end end}))
+         intersection (clojure.set/intersection dts1 dts2)]
+     (-> intersection
+         seq
+         boolean))))
 
 ;; Simplified text
 
@@ -596,18 +681,18 @@
 ;; Entrypoints
 
 (defn cron->map
-  "Parse a crontab string into a map of ranges"
+  "Parse a cron entry into a map of ranges"
   [s]
   (try (cron->map-unsafe s)
        (catch Exception _ nil)))
 
 (defn cron-valid?
-  "Return true if a crontab entry is valid"
+  "Return true if a cron entry is valid"
   [s]
   (some? (cron->map s)))
 
 (defn cron-validate
-  "Return validation status and error message for a given crontab entry"
+  "Return validation status and error message for a given cron entry"
   [s]
   (try (cron->map-unsafe s)
        {:ok? true}
@@ -619,21 +704,22 @@
                            (:start expected) (:end expected))]
            {:ok? false :error msg}))
        (catch Exception _
-         {:ok? false :error "Invalid crontab format"})))
+         {:ok? false :error "Invalid cron entry format"})))
 
 (defn cron->dt
-  "Parse crontab string into a lazy seq of ZonedDateTime objects
+  "Parse cron entry into a lazy seq of ZonedDateTime objects
   opts:
     :start - ZonedDateTime after which to generate times (default: now).
              Only the instant matters, not its timezone - results after
              this point in time are included regardless of zone.
     :tz    - ZoneId for generated datetimes (default: UTC)
-
+    :end   - ZonedDateTime before which to generate times (default: nil).
+             If not defined, does not limit resulting lazy seq.
   "
   ([s] (cron->dt s {}))
-  ([s {:keys [start tz]}]
+  ([s {:keys [start tz end]}]
    (let [parsed-cron (cron->map s)
-         tz (or tz utc-tz)
+         tz (or tz tz-utc)
          start (or start (get-current-dt tz))
          current-year (.getYear ^java.time.ZonedDateTime (.withZoneSameInstant ^java.time.ZonedDateTime start ^java.time.ZoneId tz))
          years (iterate inc current-year)
@@ -650,12 +736,40 @@
                          dt
                          (:day-of-month parsed-cron)
                          (:day-of-week parsed-cron))
-                        (dt-future? start dt))]
+                        (dt-gt? dt start))]
              dt))]
-     results)))
+     (take-while (fn [dt*] (or (nil? end) (dt-lt? dt* end))) results))))
+
+(defn crons->overlaps
+  "Given a vector of cron entries, return a set of cron pairs that overlap.
+  Pairs are overlapping when at least one firing time coincides for
+  both crons entries.
+
+  opts:
+    :start - ZonedDateTime after which to generate times (default: now).
+             Only the instant matters, not its timezone - results after
+             this point in time are included regardless of zone.
+    :tz    - ZoneId for generated datetimes (default: UTC)
+    :end   - a horizon, a ZonedDateTime before which to generate times
+             (default: 1 year ahead of ``start``).
+             If not defined, does not limit resulting lazy seq.
+  "
+  ([crons]
+   (crons->overlaps crons {}))
+  ([crons {:keys [start tz end]}]
+   (let [indexed (vec crons)
+         pairs (for [i (range (count indexed))
+                     j (range (inc i) (count indexed))]
+                 [(indexed i) (indexed j)])]
+     ;; for each pair, fast-reject then scan
+     (->> pairs
+          (filter (fn [[a b]] (fields-overlap? a b)))
+          (filter (fn [[a b]] (bounded-dt-scans-overlap?
+                               a b {:start start :tz tz :end end})))
+          (set)))))
 
 (defn cron->text
-  "Parse crontab string into a human-readable text.
+  "Parse cron entry into a human-readable text.
    opts:
      :locale - a locale map for translations (default: English).
                Partial maps are merged with the English defaults.
