@@ -205,6 +205,7 @@
 
 (def vienna (ZoneId/of "Europe/Vienna"))   ;; UTC+1 in winter, UTC+2 in summer
 (def london (ZoneId/of "Europe/London"))   ;; UTC+0 in winter, UTC+1 in summer
+(def utc (ZoneId/of "UTC"))
 
 (def params-cron->dt
   [["12,14,17,35-45/3 */2 27 2 *"
@@ -414,7 +415,21 @@
     2
     [(kairos/get-dt 1976 1 1 1 0 vienna)
      (kairos/get-dt 1976 1 1 2 0 vienna)]
-    "New Year's Eve edge — output zone is ahead of start zone"]])
+    "New Year's Eve edge — output zone is ahead of start zone"]
+   ;;
+   ;; start & end
+   ;;
+   ["@yearly"
+    {:start (kairos/get-dt 1970 12 1 23 30)
+     :tz utc
+     :end (kairos/get-dt 1975 12 1 23 30)}
+    10
+    [(kairos/get-dt 1971 1 1 0 0 utc)
+     (kairos/get-dt 1972 1 1 0 0 utc)
+     (kairos/get-dt 1973 1 1 0 0 utc)
+     (kairos/get-dt 1974 1 1 0 0 utc)
+     (kairos/get-dt 1975 1 1 0 0 utc)]
+    "End date specified, take's number ignored"]])
 
 (deftest test-cron->dt
   (testing "Test generate a sequence of Date-Time objects:"
@@ -448,7 +463,7 @@
     "Minute start is greater than the end"]
    ["Mon-Fri"
     false
-    {:ok? false :error "Invalid crontab format"}
+    {:ok? false :error "Invalid cron entry format"}
     "Wrong crontab format"]])
 
 (deftest test-cron-validate
@@ -457,3 +472,61 @@
       (testing cron
         (is (= valid? (kairos/cron-valid? cron)) description)
         (is (= expected (kairos/cron-validate cron)) description)))))
+
+;; Overlaps detection
+
+(def params-crons->overlaps
+  [[["0 0 * * *" "0 0 * * *"]
+    {}
+    #{["0 0 * * *" "0 0 * * *"]}
+    "Identical cron entries overlap"]
+   [["0 0 * * *" "0 0 1 * *"]
+    {}
+    #{["0 0 * * *" "0 0 1 * *"]}
+    "Daily midnight overlaps with monthly midnight"]
+   [["0 * * * *" "30 * * * *"]
+    {}
+    #{}
+    "Different minutes, no overlap"]
+   [["0 9 * * *" "0 17 * * *"]
+    {}
+    #{}
+    "Different hours, no overlap"]
+   [["0 0 1 1 *" "0 0 1 6 *"]
+    {}
+    #{}
+    "Different months, no overlap"]
+   [["0 0 * * *" "30 * * * *" "0 0 1 * *"]
+    {}
+    #{["0 0 * * *" "0 0 1 * *"]}
+    "Three crons, only daily/monthly pair overlaps"]
+   [["*/5 * * * *" "0 * * * *"]
+    {}
+    #{["*/5 * * * *" "0 * * * *"]}
+    "Every 5 min overlaps with hourly at minute 0"]
+   [["0 0 * * *" "0 * * * *" "0 0 1 * *"]
+    {}
+    #{["0 0 * * *" "0 * * * *"]
+      ["0 0 * * *" "0 0 1 * *"]
+      ["0 * * * *" "0 0 1 * *"]}
+    "Three crons, all pairs overlap"]
+   [["0 0 1 * *" "0 0 * * 5"]
+    {:start (kairos/get-dt 2024 1 1 0 0 utc)
+     :tz utc
+     :end (kairos/get-dt 2025 1 1 0 0 utc)}
+    #{["0 0 1 * *" "0 0 * * 5"]}
+    "1st of month and every Friday overlap when 1st is a Friday"]
+   [[]
+    {}
+    #{}
+    "Empty vector, no overlaps"]
+   [["0 0 * * *"]
+    {}
+    #{}
+    "Single cron, no pairs to compare"]])
+
+(deftest test-crons->overlaps
+  (testing "Test overlap detection for cron entries:"
+    (doseq [[crons opts expected description] params-crons->overlaps]
+      (testing description
+        (is (= expected (kairos/crons->overlaps crons opts)) description)))))

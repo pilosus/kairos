@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file. This change
 
 Nothing here yet.
 
+### Added
+
+- `crons->overlaps` to return pairs of overlapping cron entries
+  ([48])[https://github.com/pilosus/kairos/issues/48]
+
+- Definition of `cron entry, cron expression, or cron` to avoid misuse
+  of the word `crontab`.
+
+### Changed
+
+- `cron-validate` error message `Invalid crontab format` has been
+  changed to `Invalid cron entry format`
+
+- Consistent use of `cron entry` or `cron` instead of incorrectly used
+  `crontab` across documentation.
+
+### Deprecated
+
+- `utc-tz` variable deprecated, use `tz-utc` instead
+- `dt-future?` function deprecated, use `dt-gt?` instead
+
+
 ## [v0.2.62] - 2026-05-04
 
 ### Added
