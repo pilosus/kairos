@@ -461,26 +461,33 @@
 
 (def params-cron->text-es-complex
   [["3-17 * * * *"
-    "cada minuto de 3 a 17, cada hora, cada día, cada mes"
+    "cada minuto entre el 3 y el 17 de cada hora, todos los días, todos los meses"
     "Simple range value"]
+
    ["10-20/2 * * * *"
-    "cada 2 minutos de 10 a 20, cada hora, cada día, cada mes"
+    "cada 2 minutos entre el 10 y el 20 de cada hora, todos los días, todos los meses"
     "Explicit range with step"]
+
    ["1,2,17 * * * *"
-    "minuto 1, minuto 2, minuto 17, cada hora, cada día, cada mes"
+    "minutos 1, 2 y 17 de cada hora, todos los días, todos los meses"
     "Simple list of values"]
+
    ["* * 1-15 * *"
-    "cada minuto, cada hora, cada día del mes de 1 a 15, cada mes"
+    "cada minuto de cada hora, días del mes del 1 al 15, todos los meses"
     "Day of month only"]
+
    ["* * * * 1-4"
-    "cada minuto, cada hora, cada día de la semana de lunes a jueves, cada mes"
+    "cada minuto de cada hora, cada día de lunes a jueves"
     "Day of week only"]
+
    ["* * 1-15 * 1-4"
-    "cada minuto, cada hora, cada día del mes de 1 a 15 o cada día de la semana de lunes a jueves, cada mes"
+    "cada minuto de cada hora, días del 1 al 15 del mes o de lunes a jueves"
     "Day of month OR day of week"]
+
    ["* * * Jan-May *"
-    "cada minuto, cada hora, cada día, cada mes de enero a mayo"
+    "cada minuto de cada hora, cada día, de enero a mayo"
     "Month range"]
+
    ["cannot be parsed"
     nil
     "Wrong value"]])

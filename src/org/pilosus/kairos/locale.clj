@@ -15,7 +15,8 @@
 
 (ns org.pilosus.kairos.locale
   "Predefined locale maps for cron->text localization.
-   See org.pilosus.kairos/locale-en for the full schema.")
+   See org.pilosus.kairos/locale-en for the full schema."
+  (:require [clojure.string :as string]))
 
 (def de
   {:day-names          {1 "Montag" 2 "Dienstag" 3 "Mittwoch" 4 "Donnerstag"
@@ -61,6 +62,16 @@
    5 "mayo" 6 "junio" 7 "julio" 8 "agosto"
    9 "septiembre" 10 "octubre" 11 "noviembre" 12 "diciembre"})
 
+(defn- es-list-join
+  "Join list values with commas and 'y' before the last item, prefixing with plural field name."
+  [field-name-plural parsed-values]
+  (let [n (count parsed-values)]
+    (if (= n 1)
+      (first parsed-values)
+      (str field-name-plural " "
+           (string/join ", " (butlast parsed-values))
+           " y " (last parsed-values)))))
+
 (def es
   {:day-names          {1 "lunes" 2 "martes" 3 "miércoles" 4 "jueves"
                         5 "viernes" 6 "sábado" 7 "domingo"}
@@ -73,29 +84,34 @@
    :field-fmts
    {:minute       {:fmt/every-unit  "cada minuto"
                    :fmt/every-nth   "cada %s minutos"
-                   :fmt/unit-value  "minuto %s"
-                   :fmt/range       "cada minuto de %s a %s"
-                   :fmt/range-step  "cada %s minutos de %s a %s"}
+                   :fmt/unit-value  "%s"
+                   :fmt/range       "cada minuto entre el %s y el %s"
+                   :fmt/range-step  "cada %s minutos entre el %s y el %s"
+                   :fmt/list-fn     (fn [vals] (es-list-join "minutos" vals))}
     :hour         {:fmt/every-unit  "cada hora"
                    :fmt/every-nth   "cada %s horas"
-                   :fmt/unit-value  "hora %s"
-                   :fmt/range       "cada hora de %s a %s"
-                   :fmt/range-step  "cada %s horas de %s a %s"}
-    :day-of-month {:fmt/every-unit  "cada día del mes"
-                   :fmt/every-nth   "cada %s días del mes"
-                   :fmt/unit-value  "día del mes %s"
-                   :fmt/range       "cada día del mes de %s a %s"
-                   :fmt/range-step  "cada %s días del mes de %s a %s"}
+                   :fmt/unit-value  "%s"
+                   :fmt/range       "cada hora entre las %s y las %s"
+                   :fmt/range-step  "cada %s horas entre las %s y las %s"
+                   :fmt/list-fn     (fn [vals] (es-list-join "horas" vals))}
+    :day-of-month {:fmt/every-unit  "cada día"
+                   :fmt/every-nth   "cada %s días"
+                   :fmt/unit-value  "%s"
+                   :fmt/range       "días del mes del %s al %s"
+                   :fmt/range-step  "cada %s días del mes del %s al %s"
+                   :fmt/list-fn     (fn [vals] (es-list-join "días" vals))}
     :month        {:fmt/every-unit  "cada mes"
                    :fmt/every-nth   "cada %s meses"
-                   :fmt/unit-value  "mes %s"
-                   :fmt/range       "cada mes de %s a %s"
-                   :fmt/range-step  "cada %s meses de %s a %s"}
-    :day-of-week  {:fmt/every-unit  "cada día de la semana"
-                   :fmt/every-nth   "cada %s días de la semana"
-                   :fmt/unit-value  "día de la semana %s"
-                   :fmt/range       "cada día de la semana de %s a %s"
-                   :fmt/range-step  "cada %s días de la semana de %s a %s"}}
+                   :fmt/unit-value  "%s"
+                   :fmt/range       "de %s a %s"
+                   :fmt/range-step  "cada %s meses de %s a %s"
+                   :fmt/list-fn     (fn [vals] (es-list-join "meses" vals))}
+    :day-of-week  {:fmt/every-unit  "cada día"
+                   :fmt/every-nth   "cada %s días"
+                   :fmt/unit-value  "%s"
+                   :fmt/range       "cada día de %s a %s"
+                   :fmt/range-step  "cada %s días de %s a %s"
+                   :fmt/list-fn     (fn [vals] (es-list-join "días" vals))}}
    :nicknames          {"@yearly"   "cada 1 de enero a medianoche"
                         "@annually" "cada 1 de enero a medianoche"
                         "@monthly"  "el 1 de cada mes a medianoche"
@@ -117,8 +133,41 @@
    :every-minute       "cada minuto"
    :weekday            "día laborable"
    :weekend            "fin de semana"
-   :fmt/verbose        "%s, %s, %s, %s"
+   :fmt/verbose        "%s de %s, %s, %s"
+   :fmt/verbose-fn     (fn [{:keys [minute hour day month
+                                    day-of-month-raw day-of-week-raw month-raw]}]
+                         (let [has-dow (not= day-of-week-raw "*")
+                               has-dom (not= day-of-month-raw "*")
+                               has-month (not= month-raw "*")
+                               ;; When only day-of-week or both dom+dow are specified, omit month
+                               omit-month (or (and has-dow (not has-dom))
+                                              (and has-dow has-dom))
+                               day-text (cond
+                                          ;; Both day fields are *, use "todos los días" unless month is specified
+                                          (and (= day-of-month-raw "*")
+                                               (= day-of-week-raw "*")
+                                               (not has-month)) "todos los días"
+                                          ;; Both day fields are * but month is specified, use "cada día"
+                                          (and (= day-of-month-raw "*")
+                                               (= day-of-week-raw "*")
+                                               has-month) "cada día"
+                                          :else day)]
+                           (if omit-month
+                             (str minute " de " hour ", " day-text)
+                             (str minute " de " hour ", " day-text ", "
+                                  (if has-month month "todos los meses")))))
    :fmt/or             "%s o %s"
+   :fmt/or-fn          (fn [dom-raw dow-raw locale]
+                         (let [day-names (:day-names locale)
+                               dom-m (re-matcher #"(\d+)-(\d+)" dom-raw)
+                               dow-m (re-matcher #"(\d+)-(\d+)" dow-raw)]
+                           (when (and (.matches dom-m) (.matches dow-m))
+                             (let [dom-start (.group dom-m 1)
+                                   dom-end (.group dom-m 2)
+                                   dow-start (get day-names (Integer/parseInt (.group dow-m 1)))
+                                   dow-end (get day-names (Integer/parseInt (.group dow-m 2)))]
+                               (format "días del %s al %s del mes o de %s a %s"
+                                       dom-start dom-end dow-start dow-end)))))
    :fmt/every-unit     "cada %s"
    :fmt/every-nth      "cada %s %s"
    :fmt/unit-value     "%s %s"
