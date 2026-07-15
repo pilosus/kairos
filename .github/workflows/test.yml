@@ -27,7 +27,7 @@ jobs:
         with:
           cli: '1.12.4.1629'
       - name: Cache Clojure Deps
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.clojure
@@ -65,7 +65,7 @@ jobs:
         with:
           cli: '1.12.4.1629'
       - name: Cache Clojure Deps
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.clojure
